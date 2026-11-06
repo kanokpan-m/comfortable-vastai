@@ -69,6 +69,15 @@ window.addEventListener("message", async (e) => {
   }
 });
 
+// Editing a workflow without running it still counts as using the instance (auto-stop).
+let lastActivity = 0;
+function reportActivity() {
+  if (document.visibilityState !== "visible" || Date.now() - lastActivity < 60000) return;
+  lastActivity = Date.now();
+  fetch(`${BASE}api/activity`, { method: "POST" }).catch(() => {});
+}
+for (const ev of ["pointerdown", "keydown", "wheel"]) window.addEventListener(ev, reportActivity, { passive: true, capture: true });
+
 // Auto-stop warning, shown over ComfyUI.
 function showBanner(status) {
   if (!status?.warned && !status?.stopping) return hideBanner();
@@ -78,13 +87,19 @@ function showBanner(status) {
       + "background:#171718;color:#fff;border:1px solid #fd9903;border-radius:10px;padding:10px 14px;font:13px Inter,system-ui,sans-serif;box-shadow:0 8px 30px #0008";
     b.innerHTML = `<span id="comfortable-stop-text"></span><button style="background:#0b8ce9;color:#fff;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;font:inherit">Keep running</button>`;
     b.querySelector("button").onclick = () => fetch(`${BASE}api/autostop/snooze`, { method: "POST" }).then(hideBanner);
+    state.keepButton = b.querySelector("button");
     document.body.appendChild(b);
     state.banner = b;
   }
   const mins = Math.max(1, Math.round((status.stops_in || 0) / 60));
+  const verb = status.action === "destroy" ? "destroyed" : "stopped";
+  const budget = status.reason === "budget";
+  state.keepButton.style.display = budget ? "none" : "";  // the budget cap is changed in Settings, not postponed
   state.banner.querySelector("#comfortable-stop-text").textContent = status.stopping
-    ? "Instance is idle and stopping now…"
-    : `Instance idle: it will stop in about ${mins} min to save money.`;
+    ? `Instance is being ${verb} now…`
+    : budget
+      ? `Budget limit reached: the instance will be ${verb} in about ${mins} min. Raise the limit in Comfortable's Settings to keep going.`
+      : `Instance idle: it will be ${verb} in about ${mins} min to save money.`;
 }
 function hideBanner() { state.banner?.remove(); state.banner = null; }
 

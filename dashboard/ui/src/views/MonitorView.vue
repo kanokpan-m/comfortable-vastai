@@ -98,7 +98,7 @@ async function act(name, path, ok) {
               <div class="flex items-center gap-1.5"><CircleDollarSign class="size-3.5" /><dt class="sr-only">Spent</dt><dd class="tabular">${{ s.vast.spent?.toFixed(2) }} so far</dd></div>
             </dl>
             <p class="mt-3 text-xs text-fg2">
-              <template v-if="app.autostop?.enabled">Auto-stop after {{ app.autostop.minutes }} min idle<span v-if="app.autostop.idle_seconds > 60"> · idle {{ Math.floor(app.autostop.idle_seconds / 60) }} min</span></template>
+              <template v-if="app.autostop?.enabled"><template v-if="app.autostop.minutes">Auto-{{ app.autostop.action === 'destroy' ? 'destroy' : 'stop' }} after {{ app.autostop.minutes }} min idle<span v-if="app.autostop.idle_seconds > 60"> · idle {{ Math.floor(app.autostop.idle_seconds / 60) }} min</span></template><span v-if="app.autostop.budget_left != null">{{ app.autostop.minutes ? ' · ' : '' }}budget ends in {{ Math.max(0, Math.round(app.autostop.budget_left / 60)) }} min</span></template>
               <template v-else>Auto-stop is off. <a href="#/settings?section=autostop" class="text-primary-hover hover:underline">Turn it on</a></template>
             </p>
           </template>

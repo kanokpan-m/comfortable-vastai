@@ -39,7 +39,9 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   you a fraction of the GPU you paid for.
 - **GPU value.** A standard SD 1.5 benchmark, saved with the price, gives images per dollar for
   every GPU you rent.
-- **Auto-stop** after N idle minutes (warns 5 minutes ahead, inside ComfyUI too), **output backup**
+- **Auto-stop or auto-destroy** after N idle minutes (editing in ComfyUI counts as activity; destroy
+  backs up first and falls back to stop), plus an hours or dollars **budget cap** that applies even
+  while busy (warns 5 minutes ahead, inside ComfyUI too), **output backup**
   to a private Hugging Face dataset, **update in place** from Settings, browser notifications,
   Ctrl+K command palette.
 

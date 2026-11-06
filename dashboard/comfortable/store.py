@@ -50,6 +50,9 @@ DEFAULT_SETTINGS = {
     "show_nsfw": False,
     "notify_downloads": True,
     "auto_stop_minutes": 0,   # 0 = never
+    "auto_stop_action": "stop",  # or "destroy" (after backing up outputs and syncing workflows)
+    "max_hours": 0,           # budget cap: act after this many hours, busy or not (0 = no cap)
+    "max_spend": 0,           # budget cap in dollars since the instance started (0 = no cap)
     "backup_repo": "",        # Hugging Face dataset, e.g. "you/comfy-outputs"
     "backup_auto": False,     # back up after each finished ComfyUI job
     "sync_workflows": True,   # keep ComfyUI's saved workflows in the shared store (workflowsync.py)

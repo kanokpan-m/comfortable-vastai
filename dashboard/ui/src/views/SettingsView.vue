@@ -52,6 +52,11 @@ async function syncWorkflowsNow() {
   } catch (e) { app.toast(e.message, 'error') } finally { syncingWorkflows.value = false }
 }
 const concurrency = computed({ get: () => String(s.value.concurrency ?? 3), set: (v) => save('concurrency', Number(v)) })
+const stopAction = computed({ get: () => s.value.auto_stop_action || 'stop', set: (v) => save('auto_stop_action', v) })
+const maxHours = ref('')
+const maxSpend = ref('')
+watch(s, (v) => { maxHours.value = v.max_hours ? String(v.max_hours) : ''; maxSpend.value = v.max_spend ? String(v.max_spend) : '' }, { immediate: true })
+const saveCap = (key, value) => save(key, Number(value) || 0)
 const autoStop = computed({ get: () => String(s.value.auto_stop_minutes || 0), set: (v) => save('auto_stop_minutes', Number(v)) })
 
 // ---- backup ----------------------------------------------------------------------------------------
@@ -133,7 +138,7 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
     </section>
 
     <section id="s-autostop" class="rounded-xl border border-subtle bg-panel">
-      <header class="flex items-center gap-2 border-b border-stroke px-4 py-3"><Clock class="size-4 text-fg2" /><h2 class="font-medium">Auto-stop when idle</h2></header>
+      <header class="flex items-center gap-2 border-b border-stroke px-4 py-3"><Clock class="size-4 text-fg2" /><h2 class="font-medium">Auto-stop</h2></header>
       <div class="space-y-2 p-4">
         <div class="flex items-center justify-between gap-4">
           <span><span class="block text-sm">Stop the instance after</span>
@@ -141,8 +146,23 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
           <Picker v-model="autoStop" class="w-36 shrink-0" aria-label="Auto-stop after"
                   :options="[['0', 'Never'], ['15', '15 min idle'], ['30', '30 min idle'], ['60', '1 hour idle'], ['120', '2 hours idle']].map(([value, label]) => ({ value, label }))" />
         </div>
+        <div class="flex items-center justify-between gap-4">
+          <span><span class="block text-sm">Then</span>
+            <span class="block text-xs text-muted">{{ stopAction === 'destroy'
+              ? 'Backs up outputs and syncs workflows first; if the backup fails it only stops, so nothing is lost. Nothing is billed afterwards.'
+              : 'Stopping keeps your disk (models, outputs); storage is still billed while stopped. Start it again from the Vast console.' }}</span></span>
+          <Picker v-model="stopAction" class="w-36 shrink-0" aria-label="When auto-stop triggers"
+                  :options="[{ value: 'stop', label: 'Stop' }, { value: 'destroy', label: 'Destroy' }]" />
+        </div>
+        <p v-if="stopAction === 'destroy' && !s.backup_repo" class="text-xs text-warn">Set a backup dataset below, or outputs that aren't backed up keep the instance stopped instead of destroyed.</p>
+        <div class="grid gap-3 border-t border-stroke pt-3 sm:grid-cols-2">
+          <TextInput v-model="maxHours" label="Budget cap: hours" placeholder="No cap" inputmode="decimal" @blur="saveCap('max_hours', maxHours)"
+                     hint="Since the instance started, busy or not." />
+          <TextInput v-model="maxSpend" label="Budget cap: dollars" placeholder="No cap" inputmode="decimal" @blur="saveCap('max_spend', maxSpend)"
+                     :hint="app.autostop?.budget_left != null ? `Ends in about ${Math.max(0, Math.round(app.autostop.budget_left / 60))} min.` : 'GPU + disk, from Vast\'s price.'" />
+        </div>
+        <p class="text-xs text-fg2">Idle also requires that nobody used the ComfyUI page for 5 minutes, so editing a workflow keeps it running.</p>
         <p v-if="app.autostop && !app.autostop.available" class="text-xs text-warn">Only works on a Vast.ai instance.</p>
-        <p class="text-xs text-fg2">Stopping keeps your disk (models, outputs); storage is still billed while stopped. Start it again from the Vast console.</p>
       </div>
     </section>
 

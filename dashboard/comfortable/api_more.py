@@ -206,6 +206,13 @@ async def autostop_status(request):
     return ok(autostop.status(_store(request)))
 
 
+@routes.post("/api/activity")
+async def comfy_activity(request):
+    """The ComfyUI extension reports that someone is using the page."""
+    autostop.activity()
+    return ok({"ok": True})
+
+
 @routes.post("/api/autostop/snooze")
 async def autostop_snooze(request):
     b = await _body(request) if request.can_read_body else {}

@@ -138,6 +138,12 @@ async def put_settings(request):
             changes[key] = bool(value)
         elif key == "auto_stop_minutes":
             changes[key] = max(0, min(24 * 60, int(value or 0)))
+        elif key == "auto_stop_action":
+            if value not in ("stop", "destroy"):
+                raise ValueError("auto_stop_action is stop or destroy")
+            changes[key] = value
+        elif key in ("max_hours", "max_spend"):
+            changes[key] = max(0.0, min(10000.0, float(value or 0)))
         elif key in ("backup_auto", "sync_workflows"):
             changes[key] = bool(value)
         elif key == "backup_repo":

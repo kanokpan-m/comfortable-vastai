@@ -38,6 +38,13 @@ const nav = computed(() => [
   { id: 'settings', label: 'Settings', icon: Settings, dot: !!app.update?.available },
 ])
 const stopsIn = computed(() => Math.max(1, Math.round((app.autostop?.stops_in || 0) / 60)))
+const stopVerb = computed(() => (app.autostop?.action === 'destroy' ? 'destroyed' : 'stopped'))
+const stopText = computed(() => {
+  const a = app.autostop
+  if (a.stopping) return `Instance is being ${stopVerb.value} now…`
+  if (a.reason === 'budget') return `Budget limit reached: the instance will be ${stopVerb.value} in about ${stopsIn.value} min. Raise the limit in Settings to keep going.`
+  return `Instance idle: it will be ${stopVerb.value} in about ${stopsIn.value} min to save money.`
+})
 const snooze = () => api.post('autostop/snooze').then((s) => (app.autostop = s)).catch((e) => app.toast(e.message, 'error'))
 </script>
 
@@ -67,8 +74,9 @@ const snooze = () => api.post('autostop/snooze').then((s) => (app.autostop = s))
       <!-- Inside ComfyUI the extension shows this banner itself. -->
       <div v-if="!embedded && (app.autostop?.warned || app.autostop?.stopping)" class="flex flex-wrap items-center gap-2 border-b border-stroke bg-[color-mix(in_srgb,var(--warning)_14%,transparent)] px-4 py-2 text-xs text-warn" role="alert">
         <Clock class="size-4" />
-        <span class="flex-1">{{ app.autostop.stopping ? 'Instance is idle and stopping now…' : `Instance idle: it will stop in about ${stopsIn} min to save money.` }}</span>
-        <Btn v-if="!app.autostop.stopping" size="sm" variant="primary" @click="snooze">Keep running</Btn>
+        <span class="flex-1">{{ stopText }}</span>
+        <Btn v-if="!app.autostop.stopping && app.autostop.reason === 'budget'" size="sm" variant="primary" @click="go('settings', { section: 'autostop' })">Change limit</Btn>
+        <Btn v-else-if="!app.autostop.stopping" size="sm" variant="primary" @click="snooze">Keep running</Btn>
       </div>
       <!-- Update available -->
       <div v-else-if="app.update?.available && route.view !== 'settings'" class="flex items-center gap-2 border-b border-stroke bg-primary-soft px-4 py-1.5 text-xs">
