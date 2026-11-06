@@ -147,8 +147,8 @@ def pick(results, forced):
             res["speedup"] = round(math.exp(log_gain), 3)
     if forced != "auto":
         if forced in results and results[forced]["ok"]:
-            return forced, f"forced by XTRA_ATTENTION={forced}"
-        log(f"XTRA_ATTENTION={forced} is not usable here; falling back to auto")
+            return forced, f"forced by COMFORTABLE_ATTENTION={forced}"
+        log(f"COMFORTABLE_ATTENTION={forced} is not usable here; falling back to auto")
     ok = [n for n, r in results.items() if r["ok"] and "speedup" in r]
     best = max(ok, key=lambda n: results[n]["speedup"])
     if best != "pytorch" and results[best]["speedup"] < MIN_GAIN:
@@ -197,7 +197,7 @@ def main():
     ap.add_argument("--base-args", required=True)
     ap.add_argument("--attention", default="auto")
     ap.add_argument("--fast", default="0")
-    ap.add_argument("--cache", default="/workspace/.comfy_xtra/tune.json")
+    ap.add_argument("--cache", default="/workspace/.comfortable/tune.json")
     a = ap.parse_args()
 
     gpu = gpu_info()

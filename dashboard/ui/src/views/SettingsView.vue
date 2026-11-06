@@ -89,7 +89,7 @@ const theme = ref(document.documentElement.dataset.theme === 'light' ? 'light' :
 watch(theme, (t) => {
   if (t === 'light') document.documentElement.dataset.theme = 'light'
   else delete document.documentElement.dataset.theme
-  try { localStorage.setItem('xtra-theme', t) } catch {}
+  try { localStorage.setItem('comfortable-theme', t) } catch {}
 })
 const db = computed(() => app.boot.store || {})
 

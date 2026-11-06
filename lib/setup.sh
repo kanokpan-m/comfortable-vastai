@@ -21,13 +21,13 @@ for folder in $MODEL_FOLDERS; do
   mkdir -p "$COMFY_BASE/$folder"
 done
 
-# Keep models on a Vast volume (XTRA_MODEL_VOLUME = its mount path) so they survive
+# Keep models on a Vast volume (COMFORTABLE_MODEL_VOLUME = its mount path) so they survive
 # destroying the instance: each model folder becomes a link into the volume, and
 # anything already in it (e.g. the image's bundled SD 1.5) is moved over first.
-if [[ -n "${XTRA_MODEL_VOLUME:-}" ]]; then
-  if [[ -d "$XTRA_MODEL_VOLUME" ]]; then
+if [[ -n "${COMFORTABLE_MODEL_VOLUME:-}" ]]; then
+  if [[ -d "$COMFORTABLE_MODEL_VOLUME" ]]; then
     for folder in $MODEL_FOLDERS; do
-      src="$COMFY_BASE/$folder" dst="$XTRA_MODEL_VOLUME/models/$folder"
+      src="$COMFY_BASE/$folder" dst="$COMFORTABLE_MODEL_VOLUME/models/$folder"
       # Leave aliases alone (the image links ckpt -> checkpoints); they follow their target.
       [[ -L "$src" && "$(readlink "$src")" != "$dst" ]] && continue
       mkdir -p "$dst"
@@ -37,9 +37,9 @@ if [[ -n "${XTRA_MODEL_VOLUME:-}" ]]; then
       fi
       ln -sfn "$dst" "$src"
     done
-    log "Model folders live on the volume at $XTRA_MODEL_VOLUME/models ($(du -sh "$XTRA_MODEL_VOLUME/models" 2>/dev/null | cut -f1) already there)"
+    log "Model folders live on the volume at $COMFORTABLE_MODEL_VOLUME/models ($(du -sh "$COMFORTABLE_MODEL_VOLUME/models" 2>/dev/null | cut -f1) already there)"
   else
-    log "WARN: XTRA_MODEL_VOLUME=$XTRA_MODEL_VOLUME is not mounted; models stay on the instance disk"
+    log "WARN: COMFORTABLE_MODEL_VOLUME=$COMFORTABLE_MODEL_VOLUME is not mounted; models stay on the instance disk"
   fi
 fi
 

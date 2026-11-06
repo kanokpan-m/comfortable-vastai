@@ -4,7 +4,7 @@ Adds a "Comfortable" sidebar tab (the full Comfortable dashboard) and checks eve
 workflow you open for missing models, node packs and misplaced files.
 
 The dashboard runs as its own service on 127.0.0.1:17890. This extension
-serves it through ComfyUI's own server under /xtra/, so it is on the same
+serves it through ComfyUI's own server under /comfortable/, so it is on the same
 address as ComfyUI (no second login) and the two can talk to each other.
 """
 import os
@@ -17,7 +17,7 @@ WEB_DIRECTORY = "./web"
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-UPSTREAM = os.environ.get("XTRA_DASHBOARD_URL", "http://127.0.0.1:17890").rstrip("/")
+UPSTREAM = (os.environ.get("COMFORTABLE_DASHBOARD_URL") or os.environ.get("XTRA_DASHBOARD_URL") or "http://127.0.0.1:17890").rstrip("/")
 HOP_HEADERS = {"connection", "keep-alive", "transfer-encoding", "content-length", "content-encoding", "host", "upgrade"}
 _session = None
 
@@ -29,13 +29,13 @@ async def _client():
     return _session
 
 
-@PromptServer.instance.routes.route("*", "/xtra")
-async def xtra_root(request):
-    raise web.HTTPFound("/xtra/")
+@PromptServer.instance.routes.route("*", "/comfortable")
+async def comfortable_root(request):
+    raise web.HTTPFound("/comfortable/")
 
 
-@PromptServer.instance.routes.route("*", "/xtra/{tail:.*}")
-async def xtra_proxy(request):
+@PromptServer.instance.routes.route("*", "/comfortable/{tail:.*}")
+async def comfortable_proxy(request):
     """Stream any request to the dashboard and its response back (works for Server-Sent Events)."""
     tail = request.match_info["tail"]
     url = f"{UPSTREAM}/{tail}"
@@ -54,6 +54,6 @@ async def xtra_proxy(request):
             await resp.write_eof()
             return resp
     except aiohttp.ClientConnectorError:
-        return web.Response(status=502, text="Comfortable dashboard is not running (supervisorctl status comfy-xtra)")
+        return web.Response(status=502, text="Comfortable dashboard is not running (supervisorctl status comfortable)")
     except (ConnectionResetError, aiohttp.ClientPayloadError):
         return web.Response(status=499)

@@ -7,9 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-os.environ.setdefault("XTRA_WORKSPACE", tempfile.mkdtemp())
+os.environ.setdefault("COMFORTABLE_WORKSPACE", tempfile.mkdtemp())
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "dashboard"))
-from xtra import downloads, fixer  # noqa: E402
+from comfortable import downloads, fixer  # noqa: E402
 
 KOLORS_VAE = {"name": "Kolors VAE", "type": "VAE", "base": "Kolors", "save_path": "vae/kolors", "filename": "diffusion_pytorch_model.safetensors",
               "url": "https://huggingface.co/Kwai-Kolors/Kolors/resolve/main/vae/diffusion_pytorch_model.safetensors", "size": "335MB"}
@@ -145,7 +145,7 @@ class CivitaiFind(unittest.TestCase):
         self.assertEqual(r["confidence"], "possible")  # still offered, to try by hand
 
 
-from xtra import util, workflows  # noqa: E402
+from comfortable import util, workflows  # noqa: E402
 
 NOTE = """## Model Links
 
