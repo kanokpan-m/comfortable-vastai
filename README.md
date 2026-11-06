@@ -84,6 +84,7 @@ reads on every start.
 talks to the dashboard over SSH, so no portal token is needed:
 
 ```bash
+python tools/comfortable.py go my_workflow.json        # rent the best host for it, set it up, open it in ComfyUI
 python tools/comfortable.py offers --for my_workflow.json                    # best value for this workflow
 python tools/comfortable.py offers --rank speed --max-price 1.0                # fastest under $1/h
 python tools/comfortable.py rent --for my_workflow.json --auto-swap --bundles starter

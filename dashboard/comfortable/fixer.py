@@ -720,6 +720,17 @@ def manager_queue_status():
 
 
 # ---- the plan ----------------------------------------------------------------------------------
+def auto_fixes(models):
+    """Fixes that are safe without a look: not gated (licence to accept), not a near-identical name
+    ("likely"), not for a switched-off node."""
+    return [e for e in models if e["fix"] and not (e["fix"].get("candidate") or {}).get("gated")
+            and e["confidence"] != "likely" and not e.get("optional")]
+
+
+def installable_packs(nodes):
+    return sorted({n["pack"]["id"] for n in nodes if n.get("pack") and n["pack"]["state"] not in ("enabled", "installed")})
+
+
 def plan(workflow, library, settings, reported_missing_nodes=None):
     analysis = workflows.analyze(workflow, library)
     hints = workflows.hints(workflow) if isinstance(workflow.get("nodes"), list) else {}
@@ -759,8 +770,7 @@ def plan(workflow, library, settings, reported_missing_nodes=None):
         nodes, nodes_error = [], str(exc)
     # Gated files need a licence accepted, and "likely" (near-identical file name) matches need a look.
     # Models of switched-off nodes aren't needed to run the workflow as it is: offer them, don't fetch them.
-    auto = [e for e in out_models if e["fix"] and not (e["fix"].get("candidate") or {}).get("gated")
-            and e["confidence"] != "likely" and not e.get("optional")]
+    auto = auto_fixes(out_models)
     need = sum(e["fix"]["size"] for e in auto if e["fix"]["kind"] == "download")
     free = shutil.disk_usage(config.WORKSPACE).free if config.WORKSPACE.exists() else None
     unresolved = [e["filename"] for e in out_models if e["status"] != "installed" and not e["fix"] and not e.get("optional")]

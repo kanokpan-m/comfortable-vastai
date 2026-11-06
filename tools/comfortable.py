@@ -16,6 +16,8 @@ portal token is needed.
   comfortable api PATH [ID] [-X POST -d JSON]   any dashboard route, e.g. `comfortable api benchmark`
   comfortable logs [ID] [--lines 80]
   comfortable spend [--days 30]  what renting cost: per day, per instance, per workflow
+  comfortable go WORKFLOW [same filters as rent]   rent the best host for it, install its models and
+                            nodes, load it into ComfyUI and open it (asks before renting, unless --yes)
 Add --json to status / offers / fix / needs for machine-readable output.
 
 Prices are real costs: GPU + your disk size per hour, plus the host's download fee for the
@@ -24,6 +26,7 @@ models you'll fetch, spread over --hours. Speed is your own benchmark (images/ho
 Hosts scoring well below others with the same GPU (power-limited, throttled) are hidden.
 """
 import argparse
+import base64
 import json
 import math
 import os
@@ -34,6 +37,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -852,7 +856,7 @@ def cmd_rent(a):
             if dash(inst, "benchmark/run", "POST", {}) is not None:
                 print(f"No benchmark of yours for the {o['gpu_name']} yet: running one now (about 2 minutes, under $0.02).")
         show_status(inst)
-        return
+        return inst
 
 
 class HostFailed(Exception):
@@ -993,17 +997,43 @@ def cmd_tunnel(a):
                       "-p", str(port), f"root@{host}"])
 
 
+REMOTE_WORKFLOW = "/tmp/comfortable-fix.json"
+
+
+def upload_workflow(inst, path):
+    """Copy a workflow to the instance (workflows can be too large for a command line)."""
+    host, port = ssh_target(inst)
+    subprocess.run(["scp", "-q", "-o", "LogLevel=ERROR", "-P", str(port), path, f"root@{host}:{REMOTE_WORKFLOW}"], check=True)
+
+
+def post_workflow(inst, route, extra=None, timeout=180):
+    """POST {workflow: <the uploaded file>, **extra} to a dashboard route, from the instance itself."""
+    return dash_raw(inst, route, remote_body_cmd(extra), timeout)
+
+
+def remote_body_cmd(extra=None):
+    """Shell command (run on the instance) printing {**extra, workflow: <uploaded file>} as JSON.
+    `extra` travels base64-encoded, so no quoting can break the command."""
+    blob = base64.b64encode(json.dumps(extra or {}).encode()).decode()
+    return (f"python3 -c \"import base64,json;b=json.loads(base64.b64decode('{blob}'));"
+            f"b['workflow']=json.load(open('{REMOTE_WORKFLOW}'));print(json.dumps(b))\"")
+
+
+def dash_raw(inst, route, body_cmd, timeout=180):
+    out = ssh(inst, f"{body_cmd} | curl -s -m {timeout - 10} -H 'Content-Type: application/json' -d @- "
+                    f"http://127.0.0.1:17890/api/{route}", timeout=timeout)
+    try:
+        return json.loads(out) if out else None
+    except ValueError:
+        return None
+
+
 def cmd_fix(a):
     inst = pick_instance(a.id)
     with open(a.workflow, encoding="utf-8") as f:
         json.load(f)  # fail early on a broken file
-    host, port = ssh_target(inst)
-    # Upload the workflow, then post it from the instance (workflows can be large).
-    remote = "/tmp/comfortable-fix.json"
-    subprocess.run(["scp", "-q", "-o", "LogLevel=ERROR", "-P", str(port), a.workflow, f"root@{host}:{remote}"], check=True)
-    out = ssh(inst, f"python3 -c \"import json;print(json.dumps({{'workflow': json.load(open('{remote}'))}}))\" | "
-                    f"curl -s -m 170 -H 'Content-Type: application/json' -d @- http://127.0.0.1:17890/api/fix/plan", timeout=180)
-    plan = json.loads(out) if out else die("no answer from the dashboard")
+    upload_workflow(inst, a.workflow)
+    plan = post_workflow(inst, "fix/plan") or die("no answer from the dashboard")
     if a.json:
         print(json.dumps(plan, indent=1))
         return
@@ -1031,6 +1061,96 @@ def cmd_fix(a):
         print(f"  node     {n['type']:<60} {(n['pack'] or {}).get('title') or 'no pack found'}{' (linked in the notes)' if n.get('via_notes') else ''}")
     if s["models_fixable"] or s["nodes_fixable"]:
         print("Fix it from the Comfortable tab in ComfyUI, or the Fixer screen in Comfortable.")
+
+
+ACTIVE_DOWNLOADS = ("queued", "starting", "downloading", "verifying")
+
+
+def wait_downloads(inst, minutes):
+    """Wait for the instance's downloads, printing progress now and then. False on timeout."""
+    t0, last = time.time(), 0
+    while time.time() - t0 < minutes * 60:
+        tasks = dash(inst, "downloads", timeout=30)
+        if tasks is None:
+            time.sleep(10)
+            continue
+        active = [t for t in tasks if t.get("status") in ACTIVE_DOWNLOADS]
+        if not active:
+            failed = [t["filename"] for t in tasks if t.get("status") == "failed"]
+            if failed:
+                print("  Failed: " + ", ".join(failed) + " (retry from the Downloads screen)")
+            return True
+        if time.time() - last > 30:
+            done = sum(t.get("done") or 0 for t in active) / 1e9
+            size = sum(t.get("size") or 0 for t in active) / 1e9
+            print(f"  {len(active)} download(s): {done:.1f} of {size:.1f} GB" if size else f"  {len(active)} download(s) running…")
+            last = time.time()
+        time.sleep(10)
+    return False
+
+
+def wait_packs(inst, minutes=15):
+    t0 = time.time()
+    while time.time() - t0 < minutes * 60:
+        st = dash(inst, "fix/packs/status", timeout=30) or {}
+        if not (st.get("is_processing") or st.get("in_progress_count")):
+            return True
+        time.sleep(10)
+    return False
+
+
+def open_tunnel(inst, port, browser=True):
+    """Forward the dashboard and ComfyUI to localhost, open ComfyUI, and keep the tunnel up until Ctrl+C."""
+    host, sport = ssh_target(inst)
+    proc = subprocess.Popen(["ssh", "-o", "LogLevel=ERROR", "-N", "-L", f"{port}:127.0.0.1:17890", "-L", f"{port + 1}:127.0.0.1:18188",
+                             "-p", str(sport), f"root@{host}"])
+    print(f"ComfyUI on http://localhost:{port + 1}, Comfortable on http://localhost:{port}  · Ctrl+C to close the tunnel")
+    if browser:
+        time.sleep(3)
+        import webbrowser
+        webbrowser.open(f"http://localhost:{port + 1}")
+    try:
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+        print(f"\nTunnel closed. The instance is still running: comfortable stop {inst['id']} (or destroy) when you're done.")
+
+
+def cmd_go(a):
+    """Rent the best host for a workflow, install what it needs, load it into ComfyUI and open it."""
+    with open(a.workflow, encoding="utf-8") as f:
+        json.load(f)  # fail early on a broken file
+    a.workflow_for = a.workflow
+    inst = cmd_rent(a)  # shows the offer and asks first (unless --yes)
+    if not inst:
+        return
+    print("\nSetting up the workflow on the instance…")
+    upload_workflow(inst, a.workflow)
+    r = post_workflow(inst, "fix/apply", {"auto": True}, timeout=300) or die("no answer from the dashboard; try `comfortable fix`")
+    print(f"  {len(r.get('tasks') or [])} model download(s) queued, {len(r.get('moves') or [])} moved, "
+          f"{sum(v == 'queued' for v in (r.get('packs') or {}).values())} node pack(s) installing")
+    for pid, res in (r.get("packs") or {}).items():
+        if res not in ("queued", "already installed", "installed"):
+            print(f"  ! node pack {pid}: {res}")
+    if not wait_downloads(inst, a.wait):
+        print(f"  Still downloading after {a.wait} min; it carries on in the background (Downloads screen).")
+    if r.get("restart_needed"):
+        print("  Waiting for the node packs, then restarting ComfyUI…")
+        wait_packs(inst)
+        dash(inst, "comfy/restart", "POST", {}, timeout=120)
+    name = re.sub(r"[^\w.\- ]+", "_", os.path.basename(a.workflow))
+    saved = ssh(inst, f"curl -fs -m 30 -X POST --data-binary @{REMOTE_WORKFLOW} "
+                      f"'http://127.0.0.1:18188/api/userdata/workflows%2F{urllib.parse.quote(name)}?overwrite=true' && echo SAVED", timeout=60)
+    print(f"  Saved as {name} in ComfyUI's Workflows list." if saved and "SAVED" in saved
+          else "  Couldn't save the workflow into ComfyUI; drag the file onto ComfyUI instead.")
+    for m in r.get("needs_you") or []:
+        print(f"  needs you: {m['filename']} ({m['why']}): open the Comfortable tab in ComfyUI")
+    for t in r.get("nodes_unresolved") or []:
+        print(f"  needs you: node {t} (no pack found)")
+    if a.no_tunnel:
+        print(f"Ready. Open it with: comfortable tunnel {inst['id']}")
+        return
+    open_tunnel(inst, a.port, browser=not a.no_browser)
 
 
 def cmd_simple(action):
@@ -1078,6 +1198,18 @@ def add_offer_args(p):
     p.add_argument("--refresh", action="store_true", help="re-read your benchmarks and host verdicts now")
 
 
+
+def add_rent_args(p):
+    p.add_argument("--bundles", help="bundles to auto-install, comma separated")
+    p.add_argument("--offer", type=int, help="rent exactly this offer id (from `comfortable offers`), or nothing if it's gone")
+    p.add_argument("--auto-swap", action="store_true", help="if the host check fails, destroy it and rent the next best host")
+    p.add_argument("--max-swaps", type=int, default=2)
+    p.add_argument("--no-bench", action="store_true", help="don't benchmark GPU models you haven't measured yet")
+    p.add_argument("--keep-models", action="store_true", help=f"store models on a Vast volume ({VOLUME_LABEL}) that outlives the instance")
+    p.add_argument("--volume-size", type=int, default=150); p.add_argument("--label", default="comfortable")
+    p.add_argument("--set", action="append", metavar="KEY=VALUE", help="extra env var for this instance (merged over the template's)")
+    p.add_argument("--yes", "-y", action="store_true"); p.add_argument("--dry-run", action="store_true", help="show the choice, rent nothing")
+
 def main():
     for stream in (sys.stdout, sys.stderr):  # Windows consoles default to a legacy code page
         try:
@@ -1090,21 +1222,20 @@ def main():
     add_offer_args(p)
     p.add_argument("--limit", type=int, default=15); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_offers)
     p = sub.add_parser("rent", help="rent the best matching host with your template")
-    add_offer_args(p)
-    p.add_argument("--bundles", help="bundles to auto-install, comma separated")
-    p.add_argument("--offer", type=int, help="rent exactly this offer id (from `comfortable offers`), or nothing if it's gone")
-    p.add_argument("--auto-swap", action="store_true", help="if the host check fails, destroy it and rent the next best host")
-    p.add_argument("--max-swaps", type=int, default=2)
-    p.add_argument("--no-bench", action="store_true", help="don't benchmark GPU models you haven't measured yet")
-    p.add_argument("--keep-models", action="store_true", help=f"store models on a Vast volume ({VOLUME_LABEL}) that outlives the instance")
-    p.add_argument("--volume-size", type=int, default=150); p.add_argument("--label", default="comfortable")
-    p.add_argument("--set", action="append", metavar="KEY=VALUE", help="extra env var for this instance (merged over the template's)")
-    p.add_argument("--yes", "-y", action="store_true"); p.add_argument("--dry-run", action="store_true", help="show the choice, rent nothing")
+    add_offer_args(p); add_rent_args(p)
     p.set_defaults(fn=cmd_rent)
     p = sub.add_parser("needs", help="VRAM and download size a workflow needs")
     p.add_argument("workflow"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_needs)
     p = sub.add_parser("status", help="instances and their dashboard / host health")
     p.add_argument("id", nargs="?"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_status)
+    p = sub.add_parser("go", help="rent the best host for a workflow, set it up, open it in ComfyUI")
+    p.add_argument("workflow", help="workflow .json")
+    add_offer_args(p); add_rent_args(p)
+    p.add_argument("--wait", type=float, default=60, help="minutes to wait for model downloads (default 60)")
+    p.add_argument("--port", type=int, default=17890, help="local port for the dashboard; ComfyUI gets the next one")
+    p.add_argument("--no-tunnel", action="store_true", help="set it up but don't open the tunnel")
+    p.add_argument("--no-browser", action="store_true", help="open the tunnel but not the browser")
+    p.set_defaults(fn=cmd_go)
     p = sub.add_parser("spend", help="what renting cost: per day, per instance, per workflow")
     p.add_argument("--days", type=int, default=30); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_spend)
     p = sub.add_parser("hosts", help="machines skipped because they failed the host check")

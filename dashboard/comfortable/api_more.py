@@ -33,9 +33,15 @@ async def workflow_raw(request):
 
 @routes.post("/api/fix/apply")
 async def fix_apply(request):
-    """Body: {models: [{filename, category, fix}], packs: [pack ids]}. Queues everything at once."""
+    """Body: {models: [{filename, category, fix}], packs: [pack ids]}. Queues everything at once.
+    Or {workflow, auto: true}: plan it here and apply what Fix all would (used by `comfortable go`)."""
     b = await _body(request)
     tasks, moves, errors = [], [], []
+    plan = None
+    if b.get("auto") and isinstance(b.get("workflow"), dict):
+        st = _store(request)
+        plan = await asyncio.to_thread(fixer.plan, b["workflow"], st.all("library"), st.settings())
+        b["models"], b["packs"] = fixer.auto_fixes(plan["models"]), fixer.installable_packs(plan["nodes"])
     for m in b.get("models") or []:
         fix = m.get("fix") or {}
         try:
@@ -55,8 +61,16 @@ async def fix_apply(request):
         packs = await asyncio.to_thread(fixer.install_packs, b["packs"], bool(b.get("force")))
     if moves:
         bus.publish("models", {})
-    return ok({"tasks": tasks, "moves": moves, "packs": packs, "errors": errors,
-               "restart_needed": any(v in ("queued", "installed") for v in packs.values())})
+    out = {"tasks": tasks, "moves": moves, "packs": packs, "errors": errors,
+           "restart_needed": any(v in ("queued", "installed") for v in packs.values())}
+    if plan:  # what still needs a person: a pick, a licence, or nothing found
+        fixed = {m["filename"] for m in b["models"]}
+        out["needs_you"] = [{"filename": m["filename"], "why": "gated: accept its licence and set a Hugging Face token"
+                             if (m.get("fix") and (m["fix"].get("candidate") or {}).get("gated")) else
+                             "pick from suggestions" if m.get("possible") else "not found"}
+                            for m in plan["models"] if m["status"] != "installed" and not m.get("optional") and m["filename"] not in fixed]
+        out["nodes_unresolved"] = [n["type"] for n in plan["nodes"] if not n.get("pack")]
+    return ok(out)
 
 
 @routes.post("/api/fix/use")

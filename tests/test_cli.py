@@ -1,6 +1,8 @@
 """Offline tests for tools/comfortable.py: workflow sizing, real-cost ranking, slow and bad host handling."""
 import importlib.util
+import json
 import os
+import sys
 import tempfile
 import time
 import unittest
@@ -165,6 +167,71 @@ class Workloads(unittest.TestCase):
         ranked, h = cli.rank_offers([offer(1, "RTX 4090", 96, 0.40, 101)], [], workload="sdxl")
         self.assertEqual(h["workload"], "sd15")
         self.assertGreater(ranked[0]["_ips"], 0)
+
+
+class Go(unittest.TestCase):
+    """comfortable go: rent (asks first), apply the fixer, wait, restart if packs came in, save into ComfyUI."""
+
+    def run_go(self, answer="y", apply_result=None, extra=()):
+        calls = []
+        wf = Path(tempfile.mkdtemp()) / "My Flux workflow.json"
+        wf.write_text(json.dumps({"nodes": [node("CheckpointLoaderSimple", "flux1-dev-fp8.safetensors")]}))
+        offers = [dict(offer(1, "RTX 5090", 190, 0.6, 101), _hourly=0.6, _fee=0.1, _cost_h=0.63, _ips=300, _ipd=480,
+                       _perf=1.0, _measured=True, inet_down=1000, disk_bw=3000, geolocation="X")]
+        apply_result = apply_result or {"tasks": [{"id": "t"}], "moves": [], "packs": {}, "restart_needed": False}
+        fakes = {
+            "template": lambda: {"hash_id": "h"},
+            "shared_data": lambda refresh=False: {"benchmarks": [], "hosts": []},
+            "search_offers": lambda a, machine_id=None, bad=None, shared=None: (offers, {"slow": 0, "bad": 0, "workload": "flux"}),
+            "vast": lambda *args, **kw: calls.append(("vast",) + args) or ({"new_contract": 900} if args[0] == "create" else ""),
+            "wait_ready": lambda iid: {"id": iid},
+            "wait_health": lambda inst: {"score": "good", "warnings": []},
+            "show_status": lambda inst: None,
+            "upload_workflow": lambda inst, path: calls.append(("upload", path)),
+            "post_workflow": lambda inst, route, extra=None, timeout=180: calls.append(("post", route, extra)) or apply_result,
+            "dash": lambda inst, path, method="GET", body=None, timeout=60: calls.append(("dash", path)) or ([] if path == "downloads" else {}),
+            "ssh": lambda inst, cmd, timeout=60: calls.append(("ssh", cmd)) or "SAVED",
+            "open_tunnel": lambda inst, port, browser=True: calls.append(("tunnel", port)),
+        }
+        saved = {k: getattr(cli, k) for k in fakes}
+        for k, v in fakes.items():
+            setattr(cli, k, v)
+        import builtins
+        real_input, builtins.input = builtins.input, lambda prompt="": answer
+        argv, sys.argv = sys.argv, ["comfortable", "go", str(wf)] + list(extra)
+        try:
+            cli.main()
+        except SystemExit:
+            pass
+        finally:
+            sys.argv, builtins.input = argv, real_input
+            for k, v in saved.items():
+                setattr(cli, k, v)
+        return calls
+
+    def test_rents_sets_up_saves_and_opens(self):
+        calls = self.run_go()
+        kinds = [c[0] if c[0] != "post" else c[1] for c in calls]
+        self.assertEqual(kinds[0], "vast")  # the rental
+        self.assertLess(kinds.index("upload"), kinds.index("fix/apply"))
+        self.assertIn(("post", "fix/apply", {"auto": True}), calls)
+        save = next(c[1] for c in calls if c[0] == "ssh")
+        self.assertIn("workflows%2FMy%20Flux%20workflow.json?overwrite=true", save)
+        self.assertEqual(calls[-1][0], "tunnel")
+        self.assertNotIn(("dash", "comfy/restart"), calls)  # no node packs: no restart
+
+    def test_restarts_comfyui_after_node_packs(self):
+        calls = self.run_go(apply_result={"tasks": [], "moves": [], "packs": {"kjnodes": "queued"}, "restart_needed": True})
+        self.assertIn(("dash", "comfy/restart"), calls)
+
+    def test_answering_no_rents_nothing(self):
+        calls = self.run_go(answer="n")
+        self.assertFalse([c for c in calls if c[0] == "vast" and c[1] == "create"])
+        self.assertFalse([c for c in calls if c[0] in ("upload", "tunnel")])
+
+    def test_no_tunnel(self):
+        calls = self.run_go(extra=["--no-tunnel"])
+        self.assertNotIn("tunnel", [c[0] for c in calls])
 
 
 class GpuNames(unittest.TestCase):
