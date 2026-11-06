@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -q && sudo apt-get install -yq aria2
-          pip install "aiohttp>=3.11" psutil pillow requests huggingface_hub "pymongo[srv]" certifi av cryptography
+          pip install "aiohttp>=3.11" psutil pillow requests huggingface_hub "pymongo[srv]" certifi av cryptography mongomock
       - name: Lint shell and Python
         run: |
           for f in provis.sh lib/*.sh supervisor/*.sh; do bash -n "$f"; done

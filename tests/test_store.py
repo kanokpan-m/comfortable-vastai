@@ -71,5 +71,98 @@ class KeyEncryption(unittest.TestCase):
         self.assertEqual(st.setting("hf_token"), "")
 
 
+try:
+    import mongomock
+except ImportError:  # pip install mongomock
+    mongomock = None
+
+
+@unittest.skipIf(mongomock is None, "needs mongomock")
+class Sync(unittest.TestCase):
+    """Two instances sharing one (in-memory) MongoDB."""
+
+    def setUp(self):
+        self.mongo = mongomock.MongoClient()["test"]
+        self.a, self.b = self.instance(), self.instance()
+
+    def instance(self):
+        st = fresh_store()
+        st._connect = lambda: self.mongo
+        return st
+
+    def test_edit_reaches_the_other_instance(self):
+        self.a.put("library", {"id": "1", "name": "lora"})
+        self.a.sync(); self.b.sync()
+        self.assertEqual(self.b.get("library", "1")["name"], "lora")
+        self.assertEqual(self.mongo.library.find_one({"id": "1"})["_rev"], 1)
+        self.assertNotIn("_rev", self.b.get("library", "1"))  # versions stay out of local records
+
+    def test_incremental_pull_fetches_only_recent_changes(self):
+        self.a.put("library", {"id": "1", "name": "one"}); self.a.sync(); self.b.sync()
+        self.mongo.library.update_one({"id": "1"}, {"$set": {"name": "edited long ago", "_ts": 1.0}})
+        self.b.sync()  # not full, and _ts is old: not fetched
+        self.assertEqual(self.b.get("library", "1")["name"], "one")
+        self.b._last_full = 0
+        self.b.sync()  # the full pull catches it
+        self.assertEqual(self.b.get("library", "1")["name"], "edited long ago")
+
+    def test_newer_edit_wins_and_conflict_is_reported(self):
+        self.a.put("bundles", {"id": "x", "name": "start"}); self.a.sync(); self.b.sync()
+        self.a.put("bundles", {"id": "x", "name": "from a"})
+        self.b.put("bundles", {"id": "x", "name": "from b (newer)"})
+        self.a.sync()
+        self.b.sync()  # b's base is stale, but b's edit is newer: b wins
+        self.a.sync()
+        self.assertEqual(self.mongo.bundles.find_one({"id": "x"})["name"], "from b (newer)")
+        self.assertEqual(self.a.get("bundles", "x")["name"], "from b (newer)")
+        self.assertIn("newer", self.b.conflicts[0]["outcome"])
+
+    def test_older_edit_loses_and_takes_the_newer_copy(self):
+        self.a.put("bundles", {"id": "x", "name": "start"}); self.a.sync(); self.b.sync()
+        self.b.put("bundles", {"id": "x", "name": "from b (older)"})
+        self.a.put("bundles", {"id": "x", "name": "from a (newer)"})
+        self.a.sync(); self.b.sync()
+        self.assertEqual(self.mongo.bundles.find_one({"id": "x"})["name"], "from a (newer)")
+        self.assertEqual(self.b.get("bundles", "x")["name"], "from a (newer)")
+        self.assertIn("another instance", self.b.conflicts[0]["outcome"])
+        self.assertEqual(self.b.status()["pending_writes"], 0)
+
+    def test_delete_spreads_without_a_full_pull(self):
+        self.a.put("library", {"id": "1", "name": "one"}); self.a.sync(); self.b.sync()
+        self.a.delete("library", "1"); self.a.sync()
+        self.b.sync()
+        self.assertIsNone(self.b.get("library", "1"))
+
+    def test_records_from_older_dashboards_are_updated(self):
+        self.mongo.library.insert_one({"id": "old", "name": "no version"})  # no _rev / _ts
+        self.a.sync()
+        self.a.put("library", {"id": "old", "name": "edited"}); self.a.sync()
+        docs = list(self.mongo.library.find({"id": "old"}))
+        self.assertEqual(len(docs), 1)
+        self.assertEqual((docs[0]["name"], docs[0]["_rev"]), ("edited", 1))
+
+    def test_edit_while_syncing_is_not_lost(self):
+        self.a.put("library", {"id": "1", "name": "v1"})
+        get = self.a.get
+        def edit_during_push(coll, doc_id):
+            doc = get(coll, doc_id)
+            self.a.get = get
+            self.a.put("library", {"id": "1", "name": "v2"})  # lands while v1 is being pushed
+            return doc
+        self.a.get = edit_during_push
+        self.a.sync()
+        self.assertEqual(self.a.status()["pending_writes"], 1)
+        self.a.sync()
+        self.assertEqual(self.mongo.library.find_one({"id": "1"})["name"], "v2")
+
+    def test_writes_queued_by_the_previous_version_are_pushed(self):
+        self.a.put("library", {"id": "1", "name": "queued"})
+        with self.a._db:
+            self.a._db.execute("UPDATE pending SET ts=NULL")  # older versions recorded no edit time
+        self.a.sync()
+        self.assertEqual(self.a.status()["pending_writes"], 0)
+        self.assertEqual(self.mongo.library.find_one({"id": "1"})["name"], "queued")
+
+
 if __name__ == "__main__":
     unittest.main()

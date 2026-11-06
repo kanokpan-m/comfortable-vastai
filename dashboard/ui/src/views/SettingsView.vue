@@ -211,10 +211,16 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
       <header class="flex items-center gap-2 border-b border-stroke px-4 py-3"><Database class="size-4 text-fg2" /><h2 class="font-medium">Sync</h2></header>
       <div class="p-4 text-sm">
         <p v-if="!db.mongo_configured" class="text-fg2">Library and settings are stored on this instance only. Set <code class="rounded bg-card px-1 font-mono text-xs">MONGO_URI</code> in the template to share them across instances.</p>
-        <p v-else-if="db.mongo_connected" class="flex items-center gap-1.5 text-ok"><CircleCheck class="size-4" /> Synced with MongoDB<span v-if="db.pending_writes" class="text-fg2"> · {{ db.pending_writes }} change(s) waiting</span></p>
+        <p v-else-if="db.mongo_connected" class="flex items-center gap-1.5 text-ok"><CircleCheck class="size-4" /> Synced with MongoDB<span class="text-fg2">{{ db.live ? ' · live' : '' }}</span><span v-if="db.pending_writes" class="text-fg2"> · {{ db.pending_writes }} change(s) waiting</span></p>
         <div v-else class="flex items-start gap-1.5 text-warn">
           <CircleAlert class="mt-0.5 size-4 shrink-0" />
           <span>MongoDB unreachable: changes are saved here and synced when it's back.<span v-if="db.mongo_error" class="mt-1 block break-words text-xs text-fg2">{{ db.mongo_error }}</span></span>
+        </div>
+        <div v-if="db.conflicts?.length" class="mt-3 space-y-1">
+          <p class="text-xs text-fg2">Edited on two instances at once (the newer edit was kept):</p>
+          <p v-for="c in db.conflicts" :key="c.collection + c.id + c.at" class="text-xs text-muted">
+            <span class="text-fg2">{{ c.name }}</span> ({{ c.collection }}) · {{ c.outcome }} · {{ ago(c.at) }}
+          </p>
         </div>
       </div>
     </section>

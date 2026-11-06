@@ -80,6 +80,7 @@ async def on_startup(app):
     loop = asyncio.get_running_loop()
     # The store syncs MongoDB on its own thread; hop back to the loop to notify browsers.
     app["store"].on_change = lambda colls: loop.call_soon_threadsafe(bus.publish, "data", {"collections": sorted(colls)})
+    app["store"].on_conflict = lambda c: loop.call_soon_threadsafe(bus.publish, "sync-conflict", c)
     app["downloads"].start()
     system.on_job_done = schedule_backup(app, loop)
     app["bg"] = [asyncio.create_task(system.monitor_loop()), asyncio.create_task(system.comfy_ws_loop()),
