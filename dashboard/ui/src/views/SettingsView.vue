@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import {
   KeyRound, Download, Eye, Palette, Database, Info, CircleCheck, CircleAlert, ExternalLink, Clock, CloudUpload,
-  ArrowUpCircle, Bell, HardDrive, LoaderCircle, RotateCcw,
+  ArrowUpCircle, Bell, HardDrive, LoaderCircle, RotateCcw, Lock,
 } from '@lucide/vue'
 import { api } from '../lib/api'
 import { ago, bytes } from '../lib/format'
@@ -27,6 +27,8 @@ async function saveKeys() {
   catch (e) { app.toast(e.message, 'error') } finally { savingKeys.value = false }
 }
 const masked = (v) => typeof v === 'string' && v.startsWith('••••')
+// Only shown when MongoDB is in use: without it keys never leave this instance.
+const keyStatus = computed(() => (app.boot.store?.mongo_configured || app.boot.store?.keys?.unreadable?.length) ? app.boot.store.keys : null)
 
 // ---- single settings: saved as soon as they change ---------------------------------------------
 async function save(key, value) {
@@ -108,6 +110,10 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
                    :hint="masked(keys.hf_token) ? 'Saved.' : 'Needed for gated models, and with write access for output backups.'" />
         <TextInput v-model="keys.discord_webhook" label="Discord webhook" type="password" autocomplete="off" placeholder="https://discord.com/api/webhooks/…"
                    hint="Optional: messages when an instance starts, has a poor host, goes idle, and when downloads finish." />
+        <p v-if="keyStatus" class="flex items-start gap-1.5 text-xs" :class="keyStatus.unreadable?.length ? 'text-warn' : 'text-fg2'">
+          <component :is="keyStatus.unreadable?.length ? CircleAlert : keyStatus.encrypted ? Lock : Info" class="mt-0.5 size-3.5 shrink-0" />
+          <span>{{ keyStatus.message }}</span>
+        </p>
         <div class="flex items-center justify-between gap-3 pt-1">
           <p class="text-xs text-muted">Keys stay on the server and are never sent back to the browser.</p>
           <Btn type="submit" variant="primary" :loading="savingKeys">Save keys</Btn>

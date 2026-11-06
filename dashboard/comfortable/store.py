@@ -20,7 +20,7 @@ import sqlite3
 import threading
 import time
 
-from . import config
+from . import config, crypto
 from .util import log, now
 
 COLLECTIONS = ("settings", "library", "bundles", "stars", "meta", "benchmarks", "hosts")
@@ -84,7 +84,7 @@ class Store:
         with self._lock:
             pending = self._db.execute("SELECT COUNT(*) FROM pending").fetchone()[0]
         return {"mongo_configured": bool(config.MONGO_URI), "mongo_connected": self._mongo is not None,
-                "mongo_error": self._mongo_error, "pending_writes": pending}
+                "mongo_error": self._mongo_error, "pending_writes": pending, "keys": crypto.status(self.unreadable_keys())}
 
     # ---- settings -------------------------------------------------------------------
     def settings(self):
@@ -92,9 +92,16 @@ class Store:
         if config.DISCORD_WEBHOOK_ENV:
             values["discord_webhook"] = config.DISCORD_WEBHOOK_ENV
         for doc in self.all("settings"):
-            if doc["id"] in values and doc.get("value") not in (None, ""):
-                values[doc["id"]] = doc["value"]
+            value = doc.get("value")
+            if doc["id"] in SECRET_KEYS:
+                value = crypto.decrypt(value)
+            if doc["id"] in values and value not in (None, ""):
+                values[doc["id"]] = value
         return values
+
+    def unreadable_keys(self):
+        return sorted(d["id"] for d in self.all("settings")
+                      if d["id"] in SECRET_KEYS and crypto.is_encrypted(d.get("value")) and crypto.decrypt(d["value"]) is None)
 
     def setting(self, key):
         return self.settings().get(key, DEFAULT_SETTINGS.get(key))
@@ -102,7 +109,17 @@ class Store:
     def update_settings(self, changes):
         for key, value in changes.items():
             if key in DEFAULT_SETTINGS:
-                self.put("settings", {"id": key, "value": value})
+                self.put("settings", {"id": key, "value": crypto.encrypt(value) if key in SECRET_KEYS else value})
+
+    def encrypt_existing_keys(self):
+        """With a passphrase set, encrypt keys that were saved before it was."""
+        if not crypto.enabled():
+            return
+        plain = {d["id"]: d["value"] for d in self.all("settings")
+                 if d["id"] in SECRET_KEYS and d.get("value") and not crypto.is_encrypted(d["value"])}
+        if plain:
+            self.update_settings(plain)
+            log.info("Encrypted %d saved key(s)", len(plain))
 
     # ---- MongoDB sync -----------------------------------------------------------------
     def _connect(self):
@@ -185,7 +202,7 @@ class Store:
             log.info("Migrated %d favorites and %d groups to schema v2", len(favorites), len(groups))
         for key, value in settings.items():
             if key in SECRET_KEYS and value and not self.get("settings", key):
-                self.put("settings", {"id": key, "value": value})
+                self.put("settings", {"id": key, "value": crypto.encrypt(value)})
         self.put("meta", {"id": "schema", "version": SCHEMA_VERSION, "migrated_at": now()})
         self.sync()
 
@@ -276,5 +293,9 @@ def init():
         store.migrate()
     except Exception as exc:
         log.exception("Schema migration failed: %s", exc)
+    try:
+        store.encrypt_existing_keys()
+    except Exception as exc:
+        log.exception("Could not encrypt saved keys: %s", exc)
     store.start_sync_thread()
     return store

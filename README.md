@@ -57,6 +57,7 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 | `COMFY_FAST` | `0` | `1`: the `--fast` features this GPU supports (fp16 accumulation, autotune, fp8 matmul on RTX 40+). `all`: every `--fast` feature. |
 | `MONGO_URI` | | MongoDB for library/bundles/settings/benchmarks shared between instances; SQLite is used if unset or unreachable. |
 | `DISCORD_WEBHOOK` | | Provisioning, auto-stop and host-health notifications. |
+| `COMFORTABLE_SECRET_KEY` | | Passphrase that encrypts your API keys in MongoDB (same value on every instance). Unset, keys are stored unencrypted on purpose so you can read them there. |
 
 The `XTRA_*` names from before the rename (`XTRA_REF`, `XTRA_BUNDLES`, ...) still work; the
 `COMFORTABLE_*` name wins when both are set. The shared MongoDB database keeps its old name,

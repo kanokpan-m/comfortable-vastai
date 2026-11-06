@@ -33,13 +33,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -q && sudo apt-get install -yq aria2
-          pip install "aiohttp>=3.11" psutil pillow requests huggingface_hub "pymongo[srv]" certifi av
+          pip install "aiohttp>=3.11" psutil pillow requests huggingface_hub "pymongo[srv]" certifi av cryptography
       - name: Lint shell and Python
         run: |
           for f in provis.sh lib/*.sh supervisor/*.sh; do bash -n "$f"; done
           python -m py_compile tools/comfortable.py lib/tune.py comfyui_ext/__init__.py dashboard/server.py dashboard/comfortable/*.py
       - name: Offline tests (CLI, fixer matching)
-        run: COMFORTABLE_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_cli.py tests/test_fixer.py
+        run: COMFORTABLE_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_cli.py tests/test_fixer.py tests/test_store.py
       - name: Start the dashboard
         env:
           COMFORTABLE_WORKSPACE: ${{ runner.temp }}/ws

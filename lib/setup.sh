@@ -14,7 +14,7 @@ retry 5 apt-get install -y --no-install-recommends aria2 ca-certificates curl jq
 # huggingface_hub is shared with ComfyUI's transformers, which pins its major
 # version: install it only if missing instead of force-upgrading it.
 retry 5 "$PYTHON_BIN" -m pip install --no-cache-dir -U certifi 'pymongo[srv]'
-retry 5 "$PYTHON_BIN" -m pip install --no-cache-dir huggingface_hub hf_xet
+retry 5 "$PYTHON_BIN" -m pip install --no-cache-dir huggingface_hub hf_xet cryptography
 
 MODEL_FOLDERS="audio_encoders background_removal checkpoints ckpt clip clip_vision configs controlnet detection diffusers diffusion_models embeddings frame_interpolation geometry_estimation gligen hypernetworks latent_upscale_models loras model_patches optical_flow photomaker style_models text_encoders unet upscale_models vae vae_approx"
 for folder in $MODEL_FOLDERS; do

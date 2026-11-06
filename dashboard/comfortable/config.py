@@ -36,6 +36,8 @@ MONGO_URI = (os.environ.get("MONGO_URI") or os.environ.get("MONGODB_URI") or os.
 MONGO_DB = env("MONGO_DB", "comfy_xtra")
 # Where the v1 dashboard's favorites/groups live (only differs when testing the migration).
 MONGO_V1_DB = env("MONGO_V1_DB", MONGO_DB)
+# Optional passphrase that encrypts API keys in the shared database (see crypto.py).
+SECRET_KEY = env("SECRET_KEY", "")
 DISCORD_WEBHOOK_ENV = (os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or "").strip()
 
 # Vast injects these into every container; used for the instance cost readout.
