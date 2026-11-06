@@ -6,7 +6,7 @@ import re
 
 from aiohttp import web
 
-from . import __version__, config, gallery, hostwatch, models, sources, system, workflows, workflowsync
+from . import __version__, config, gallery, hostwatch, models, nodepins, sources, system, workflows, workflowsync
 from .events import bus
 from .sources import SourceError
 from .store import SECRET_KEYS
@@ -301,7 +301,10 @@ async def bundles_install(request):
     bid = request.match_info["id"]
     items = [i for i in _store(request).all("library") if bid in (i.get("bundle_ids") or [])]
     tasks = [_dl(request).add(_download_spec(i)) for i in items]
-    return ok({"queued": len([t for t in tasks if t["status"] == "queued"]), "tasks": tasks})
+    bundle = _store(request).get("bundles", bid) or {}
+    nodes = nodepins.start(bundle)  # its pinned custom node packs, if any
+    return ok({"queued": len([t for t in tasks if t["status"] == "queued"]), "tasks": tasks,
+               "node_packs": len(bundle.get("nodes") or []) if nodes else 0})
 
 
 # ---- installed models ------------------------------------------------------------------

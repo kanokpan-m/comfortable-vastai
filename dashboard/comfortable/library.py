@@ -68,15 +68,17 @@ def bundle_plan(store, bundle_id):
             "unknown_sizes": sum(1 for i in missing if not i.get("size"))}
 
 
-def bundle_from_models(store, name, icon, entries):
+def bundle_from_models(store, name, icon, entries, nodes=None):
     """Create a bundle (and library items for models not saved yet) from fixer entries.
 
     entries: [{filename, category, candidate?}] — candidate is the fixer's download candidate.
+    nodes: the custom node packs it was made with, pinned to their commits (nodepins.pins_for).
     """
     library = store.all("library")
     by_name = {(i.get("filename") or "").lower(): i for i in library}
     by_url = {i.get("url"): i for i in library}
-    bundle = {"id": new_id(), "name": name or "Workflow bundle", "icon": icon or "🧩", "description": "", "created_at": now()}
+    bundle = {"id": new_id(), "name": name or "Workflow bundle", "icon": icon or "🧩", "description": "", "created_at": now(),
+              "nodes": nodes or []}
     store.put("bundles", bundle)
     added, linked, skipped = 0, 0, []
     for e in entries:

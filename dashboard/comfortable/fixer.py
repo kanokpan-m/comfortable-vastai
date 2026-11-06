@@ -671,12 +671,20 @@ def _pack_summary(p):
             "description": (p.get("description") or "")[:200]}
 
 
-def install_packs(pack_ids):
-    """Queue node packs in ComfyUI-Manager and start the queue. Returns per-pack results."""
+def install_packs(pack_ids, force=False):
+    """Queue node packs in ComfyUI-Manager and start the queue. Returns per-pack results.
+    Packs whose requirements would change torch, numpy & co. are held back unless force."""
+    from . import nodepins
     packs = manager_packs()
     results = {}
     for pid in dict.fromkeys(pack_ids):
         p = _pack_info(pid, packs)
+        repo = (p or {}).get("repository") or ((p or {}).get("files") or [""])[0] or (pid if pid.startswith("https://") else "")
+        if not force and repo and (p or {}).get("state") not in ("enabled", "installed"):
+            critical = nodepins.pack_conflicts(repo)["critical"]
+            if critical:
+                results[pid] = "held back: it would change " + ", ".join(f"{c['name']} {c['installed']} → {c['wanted']}" for c in critical)
+                continue
         if not p and re.match(r"https://github\.com/[\w.\-]+/[\w.\-]+$", pid):
             # Not in Manager's registry: Manager installs it from the git URL only if allowed in its config.
             r = requests.post(config.COMFY_URL + "/customnode/install/git_url", json={"url": pid}, timeout=600)

@@ -39,7 +39,7 @@ jobs:
           for f in provis.sh lib/*.sh supervisor/*.sh; do bash -n "$f"; done
           python -m py_compile tools/comfortable.py lib/tune.py comfyui_ext/__init__.py dashboard/server.py dashboard/comfortable/*.py
       - name: Offline tests (CLI, fixer matching)
-        run: COMFORTABLE_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_cli.py tests/test_fixer.py tests/test_store.py tests/test_autostop.py tests/test_hostwatch.py
+        run: COMFORTABLE_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_cli.py tests/test_fixer.py tests/test_store.py tests/test_autostop.py tests/test_hostwatch.py tests/test_nodepins.py
       - name: Start the dashboard
         env:
           COMFORTABLE_WORKSPACE: ${{ runner.temp }}/ws

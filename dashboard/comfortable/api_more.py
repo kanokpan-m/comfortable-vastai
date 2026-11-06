@@ -4,7 +4,7 @@ import json
 
 from aiohttp import web
 
-from . import autostop, backup, bench, fixer, health, library, sources, system, updater, workflowsync
+from . import autostop, backup, bench, fixer, health, library, nodepins, sources, system, updater, workflowsync
 from .api import _body, _dl, _store, ok
 from .events import bus
 from .util import log
@@ -52,7 +52,7 @@ async def fix_apply(request):
             errors.append({"filename": m.get("filename"), "error": str(exc)})
     packs = {}
     if b.get("packs"):
-        packs = await asyncio.to_thread(fixer.install_packs, b["packs"])
+        packs = await asyncio.to_thread(fixer.install_packs, b["packs"], bool(b.get("force")))
     if moves:
         bus.publish("models", {})
     return ok({"tasks": tasks, "moves": moves, "packs": packs, "errors": errors,
@@ -117,7 +117,15 @@ async def bundle_plan(request):
 @routes.post("/api/bundles/from-workflow")
 async def bundle_from_workflow(request):
     b = await _body(request)
-    result = await asyncio.to_thread(library.bundle_from_models, _store(request), b.get("name"), b.get("icon"), b.get("models") or [])
+    pins, pin_error = [], ""
+    if isinstance(b.get("workflow"), dict):  # record the custom node versions it works with
+        try:
+            pins = await asyncio.to_thread(nodepins.pins_for, list(fixer.workflow_node_types(b["workflow"])))
+        except Exception as exc:
+            pin_error = f"Node versions not recorded: {exc}"[:200]
+    result = await asyncio.to_thread(library.bundle_from_models, _store(request), b.get("name"), b.get("icon"),
+                                     b.get("models") or [], pins)
+    result["pin_error"] = pin_error
     bus.publish("bundles", {"changed": [result["bundle"]["id"]]})
     bus.publish("library", {"changed": []})
     return ok(result)
@@ -268,3 +276,23 @@ async def workflow_sync_run(request):
     st = _store(request)
     changes = await asyncio.to_thread(workflowsync.sync_once, st)
     return ok({**workflowsync.status(st), "changes": changes})
+
+
+# ---- custom node versions -----------------------------------------------------------------------
+@routes.get("/api/fix/packs/conflicts")
+async def pack_conflicts(request):
+    """What installing a GitHub node pack's requirements would change here (pip dry run)."""
+    q = request.query
+    return ok(await asyncio.to_thread(nodepins.pack_conflicts, q["repository"], q.get("commit") or "HEAD"))
+
+
+@routes.post("/api/bundles/{id}/install-nodes")
+async def bundle_install_nodes(request):
+    """Install a bundle's pinned node packs in the background; results arrive as a "bundle-nodes" event."""
+    st = _store(request)
+    bundle = st.get("bundles", request.match_info["id"])
+    if not bundle:
+        raise ValueError("No such bundle")
+    force = bool((await _body(request) if request.can_read_body else {}).get("force"))
+    nodepins.start(bundle, force)
+    return ok({"started": True, "packs": len(bundle.get("nodes") or [])})

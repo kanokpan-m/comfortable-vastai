@@ -20,7 +20,8 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   a toast offers to fix them. The Comfortable sidebar tab lists each one with where it will come from
   (your library, the workflow's own links, ComfyUI-Manager's model list, the Hugging Face repos of
   Comfy-Org / Kijai / city96 / QuantStack / lllyasviel, or Civitai), the download size against free
-  disk, and installs node packs through ComfyUI-Manager. One click fixes everything; the model lists
+  disk, and installs node packs through ComfyUI-Manager (after a pip dry run: a pack that would change
+  torch, numpy & co. is held back with a warning). One click fixes everything; the model lists
   refresh without reloading the page.
   Civitai is searched with the words in the file name (`RealisticSnapshotKrea2V2` → "Realistic
   Snapshot"), which finds 90% of real Civitai files exactly. Files only match when their folder fits
@@ -32,7 +33,8 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 - **Saved workflows on every instance.** Workflows you save in ComfyUI are kept in the shared
   database and restored on new instances; one edited on two instances keeps both versions.
 - **Library and bundles.** Save models (Civitai, Hugging Face, any URL) into bundles; turn a
-  workflow's models into a bundle; mark bundles to install automatically on every new instance.
+  workflow's models into a bundle (its custom node packs are pinned to their git commits and
+  installed at those versions elsewhere); mark bundles to install automatically on every new instance.
   Library entries are re-checked in the background and flagged when their source disappears.
 - **Host health.** About 20 s after boot the dashboard measures usable VRAM, power limit, PCIe
   link, host→GPU copy speed, disk read and download speed, and warns about hosts that would give

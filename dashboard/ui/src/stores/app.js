@@ -95,6 +95,13 @@ export const useApp = defineStore('app', {
         this.autostop = { ...(this.autostop || {}), ...a }
       })
       on('workflow-sync', (w) => { this.workflowSync = w })
+      on('bundle-nodes', (b) => {
+        // A bundle's pinned custom node packs finished installing (see nodepins.py).
+        const lines = Object.entries(b.results || {}).map(([dir, r]) => `${dir}: ${r}`)
+        const failed = lines.some((l) => /held back|failed|no repository/.test(l))
+        this.toast(`${b.name}: custom node packs ${failed ? 'need a look' : 'done'}`, failed ? 'error' : 'success',
+          lines.join('\n') + (b.restart_needed ? '\nRestart ComfyUI to load the new packs.' : ''))
+      })
       on('hostwatch', (w) => {
         this.hostwatch = w
         if (w.finding) this.toast('This host is slowing down during jobs', 'error', w.finding.warning)

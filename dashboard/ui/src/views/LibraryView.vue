@@ -80,7 +80,8 @@ async function installBundle(id, force = false) {
     }
     diskConfirm.value.open = false
     const r = await api.post(`bundles/${id}/install`)
-    app.toast(r.queued ? `Queued ${r.queued} download(s)` : 'Everything in this bundle is installed', r.queued ? 'info' : 'success')
+    const packs = r.node_packs ? ` Checking its ${r.node_packs} pinned custom node pack(s) too.` : ''
+    app.toast((r.queued ? `Queued ${r.queued} download(s).` : 'Every model in this bundle is installed.') + packs, r.queued || r.node_packs ? 'info' : 'success')
   } catch (e) { app.toast(e.message, 'error') }
 }
 async function toggleBundleAuto(b) {

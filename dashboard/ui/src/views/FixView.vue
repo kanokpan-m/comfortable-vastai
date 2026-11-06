@@ -27,6 +27,18 @@ const analyzing = ref(false)
 const applying = ref(false)
 const applied = ref(false)       // "Fix all" ran for the current plan
 const packs = ref({})            // pack id -> install result
+const conflicts = ref({})        // pack id -> what its requirements would change here (pip dry run)
+async function checkConflicts(nodeList) {
+  for (const n of nodeList || []) {
+    const p = n.pack
+    if (!p || ['enabled', 'installed'].includes(p.state) || !(p.repository || p.git_url || '').includes('github.com') || conflicts.value[p.id]) continue
+    conflicts.value = { ...conflicts.value, [p.id]: { checking: true } }
+    api.get('fix/packs/conflicts', { repository: p.repository || p.git_url })
+      .then((c) => { conflicts.value = { ...conflicts.value, [p.id]: c } })
+      .catch(() => { conflicts.value = { ...conflicts.value, [p.id]: { changes: [], critical: [] } } })
+  }
+}
+const describeChange = (c) => `${c.name} ${c.installed} → ${c.wanted}`
 const restartNeeded = ref(false)
 const comfyList = ref([])
 const comfyError = ref('')
@@ -45,7 +57,7 @@ const ORIGIN = (o) => !o ? '' : o === 'library' ? 'Your library' : o === 'workfl
 
 async function analyze(wf, label, missingNodes = []) {
   workflow.value = wf; source.value = label; analyzing.value = true; applied.value = false; packs.value = {}
-  try { plan.value = await api.post('fix/plan', { workflow: wf, missing_nodes: missingNodes }) } catch (e) { app.toast(e.message, 'error') } finally { analyzing.value = false }
+  try { plan.value = await api.post('fix/plan', { workflow: wf, missing_nodes: missingNodes }); checkConflicts(plan.value.nodes) } catch (e) { app.toast(e.message, 'error') } finally { analyzing.value = false }
 }
 const reanalyze = () => workflow.value && analyze(workflow.value, source.value)
 
@@ -140,9 +152,9 @@ async function useSuggestion(m, s) {
     app.toast(`Downloading ${s.name} as ${m.name}`, 'success', 'Saved to your library, so this workflow finds it next time.')
   } catch (e) { app.toast(e.message, 'error') }
 }
-async function installPack(id) {
+async function installPack(id, force = false) {
   try {
-    const r = await api.post('fix/apply', { packs: [id] })
+    const r = await api.post('fix/apply', { packs: [id], force })
     packs.value = { ...packs.value, ...r.packs }; restartNeeded.value = restartNeeded.value || r.restart_needed
   } catch (e) { app.toast(e.message, 'error') }
 }
@@ -166,9 +178,10 @@ const bundleName = ref('')
 async function saveBundle() {
   const entries = (plan.value?.models || []).map((m) => ({ filename: m.filename, category: m.category, candidate: m.fix?.kind === 'download' ? m.fix.candidate : null }))
   try {
-    const r = await api.post('bundles/from-workflow', { name: bundleName.value.trim() || source.value.replace(/\.(json|png)$/i, ''), icon: '🧩', models: entries })
+    const r = await api.post('bundles/from-workflow', { name: bundleName.value.trim() || source.value.replace(/\.(json|png)$/i, ''), icon: '🧩', models: entries, workflow: workflow.value })
     bundleOpen.value = false
-    app.toast(`Bundle “${r.bundle.name}” saved`, 'success', `${r.added} new model(s) added to your library, ${r.linked} already there${r.skipped.length ? `, ${r.skipped.length} without a download link` : ''}.`)
+    const pinned = r.bundle.nodes?.length ? ` ${r.bundle.nodes.length} custom node pack(s) pinned to their current versions.` : ''
+    app.toast(`Bundle “${r.bundle.name}” saved`, 'success', `${r.added} new model(s) added to your library, ${r.linked} already there${r.skipped.length ? `, ${r.skipped.length} without a download link` : ''}.${pinned}${r.pin_error ? ' ' + r.pin_error : ''}`)
     app.loadBundles(); app.loadLibrary()
   } catch (e) { app.toast(e.message, 'error') }
 }
@@ -285,6 +298,11 @@ const addOpen = ref(false)
               <p v-if="packs[n.pack.id] && packs[n.pack.id].length > 40" class="w-full text-[11px] text-danger-hover">{{ packs[n.pack.id] }}</p>
               <Tag v-else-if="['enabled', 'installed'].includes(n.pack.state)" tone="warn">Installed, needs restart</Tag>
               <Btn v-else size="sm" @click="installPack(n.pack.id)"><Download class="size-3.5" /> Install pack</Btn>
+              <Btn v-if="packs[n.pack.id]?.startsWith('held back')" size="sm" variant="ghost" @click="installPack(n.pack.id, true)">Install anyway</Btn>
+              <p v-if="conflicts[n.pack.id]?.critical?.length" class="w-full text-[11px] text-danger-hover">
+                Its requirements would change {{ conflicts[n.pack.id].critical.map(describeChange).join(', ') }}, which can break ComfyUI and other packs. It's held back unless you choose Install anyway.</p>
+              <p v-else-if="conflicts[n.pack.id]?.changes?.length" class="w-full text-[11px] text-fg2">
+                Also changes {{ conflicts[n.pack.id].changes.map(describeChange).join(', ') }}.</p>
             </template>
           </li>
         </ul>
