@@ -31,7 +31,7 @@ install_sage2_wheel(){
   local tag py url
   tag="$(sage_wheel_tag)" || return 1
   py="$("$COMFY_PY" -c 'import sys; print(f"cp{sys.version_info[0]}{sys.version_info[1]}")')"
-  url="https://github.com/${XTRA_REPO:-9PM1/VastAI}/releases/download/${tag}/sageattention-${SAGE_VERSION}-${py}-${py}-linux_x86_64.whl"
+  url="https://github.com/${XTRA_REPO:-kanokpan-m/comfortable-vastai}/releases/download/${tag}/sageattention-${SAGE_VERSION}-${py}-${py}-linux_x86_64.whl"
   log "Trying prebuilt SageAttention wheel: $url"
   curl -fsSIL --connect-timeout 10 "$url" >/dev/null 2>&1 || { log "No prebuilt wheel for ${tag}"; return 1; }
   retry 3 "$COMFY_PY" -m pip install --no-cache-dir --no-deps --force-reinstall "$url" && sage_smoke_test

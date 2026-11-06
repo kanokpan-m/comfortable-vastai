@@ -5,7 +5,7 @@ description: Rent, check, tunnel into, fix workflows on, stop and destroy Vast.a
 
 # Comfortable on Vast.ai (formerly Comfy-Xtra)
 
-All actions go through `xtra.py` in this skill's folder (a copy of `tools/xtra.py` from the 9PM1/VastAI repo).
+All actions go through `xtra.py` in this skill's folder (a copy of `tools/xtra.py` from the kanokpan-m/comfortable-vastai repo).
 Run it with the Python that has the `vastai` package installed (`pip install vastai`; the API key is set
 with `vastai set api-key`). On Windows, plain `python` may be the Microsoft Store stub; use the full path of the
 Python install that owns `vastai`. It reaches the instance over SSH, so the user's SSH key must be on vast.ai.

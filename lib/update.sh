@@ -4,7 +4,7 @@
 # extension and restarts only the dashboard. ComfyUI keeps running; if the
 # extension's Python changed, the dashboard asks you to restart ComfyUI.
 set -Eeuo pipefail
-XTRA_REPO="${XTRA_REPO:-9PM1/VastAI}"
+XTRA_REPO="${XTRA_REPO:-kanokpan-m/comfortable-vastai}"
 XTRA_REF="${XTRA_REF:-main}"
 XTRA_DIR=/opt/comfy-xtra
 LOG=/var/log/comfy-xtra-update.log

@@ -16,7 +16,7 @@ import aiohttp
 from .util import log
 
 XTRA_DIR = Path(__file__).resolve().parents[2]
-REPO = os.environ.get("XTRA_REPO", "9PM1/VastAI")
+REPO = os.environ.get("XTRA_REPO", "kanokpan-m/comfortable-vastai")
 REF = os.environ.get("XTRA_REF", "main")
 _cache = {"at": 0.0, "data": None}
 

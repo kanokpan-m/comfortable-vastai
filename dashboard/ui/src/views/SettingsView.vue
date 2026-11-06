@@ -217,7 +217,7 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
       <span class="flex items-center gap-1"><Info class="size-3.5" /> Comfortable {{ app.boot.version }} · {{ short(app.boot.installed?.sha) }}</span>
       <span>Download engine: {{ app.boot.engine }}</span>
       <span class="flex items-center gap-1"><kbd class="rounded border border-subtle px-1">Ctrl</kbd>+<kbd class="rounded border border-subtle px-1">K</kbd> commands</span>
-      <a href="https://github.com/9PM1/VastAI" target="_blank" rel="noopener" class="flex items-center gap-1 hover:text-fg">Source <ExternalLink class="size-3" /></a>
+      <a href="https://github.com/kanokpan-m/comfortable-vastai" target="_blank" rel="noopener" class="flex items-center gap-1 hover:text-fg">Source <ExternalLink class="size-3" /></a>
     </section>
   </div>
 </template>

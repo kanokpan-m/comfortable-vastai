@@ -11,7 +11,7 @@ ComfyUI, and an auto-tuned ComfyUI speed boost.
 Point the template's `PROVISIONING_SCRIPT` at:
 
 ```
-https://raw.githubusercontent.com/9PM1/VastAI/refs/heads/main/provis.sh
+https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/provis.sh
 ```
 
 ## What you get
@@ -46,7 +46,7 @@ https://raw.githubusercontent.com/9PM1/VastAI/refs/heads/main/provis.sh
 | Variable | Default | Effect |
 |---|---|---|
 | `XTRA_REF` | `main` | Branch, tag or commit to install (and to update to). Use a branch to test changes. |
-| `XTRA_REPO` | `9PM1/VastAI` | Repository to install from. |
+| `XTRA_REPO` | `kanokpan-m/comfortable-vastai` | Repository to install from. |
 | `XTRA_BUNDLES` | | Bundle names or ids to download on boot, comma separated (in addition to bundles marked auto-install). |
 | `XTRA_MODEL_VOLUME` | | Path of a mounted Vast volume (e.g. `/mnt/models`). Model folders live there, so they survive the instance. |
 | `XTRA_COMFY_EXTENSION` | `1` | `0`: don't add the Comfortable tab and workflow checks to ComfyUI. |

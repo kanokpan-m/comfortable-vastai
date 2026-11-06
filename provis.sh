@@ -4,12 +4,12 @@
 # WARNING: port 17890 must be protected by your provider/firewall/reverse proxy if exposed publicly.
 #
 # Template env:
-#   XTRA_REPO  GitHub repo to install from      (default 9PM1/VastAI)
+#   XTRA_REPO  GitHub repo to install from      (default kanokpan-m/comfortable-vastai)
 #   XTRA_REF   branch, tag or commit to install (default main)
 set -eu
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
-XTRA_REPO="${XTRA_REPO:-9PM1/VastAI}"
+XTRA_REPO="${XTRA_REPO:-kanokpan-m/comfortable-vastai}"
 XTRA_REF="${XTRA_REF:-main}"
 XTRA_DIR=/opt/comfy-xtra
 export XTRA_REPO XTRA_REF

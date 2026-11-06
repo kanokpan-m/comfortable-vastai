@@ -196,6 +196,12 @@ class AutoSwap(unittest.TestCase):
         self.assertEqual([c[:3] for c in calls], [("create", "instance", "1"), ("destroy", "instance", "901"), ("create", "instance", "2")])
         self.assertIn("101", xtra.bad_hosts())
 
+    def test_rent_installs_from_this_repo(self):
+        calls = self.run_rent(False, [{"score": "good", "warnings": []}])
+        env = calls[0][calls[0].index("--env") + 1]
+        self.assertIn(f"-e PROVISIONING_SCRIPT={xtra.PROVISIONING_URL}", env)
+        self.assertIn(xtra.REPO, xtra.PROVISIONING_URL)
+
     def test_host_that_never_starts_is_swapped(self):
         def stuck_then_ok(iid, _n=[0]):
             _n[0] += 1

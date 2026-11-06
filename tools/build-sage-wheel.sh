@@ -4,7 +4,7 @@
 # instance (any GPU; the build does not use it):
 #   bash /opt/comfy-xtra/tools/build-sage-wheel.sh /root/wheels
 # then upload with the printed tag:
-#   gh release create <tag> /root/wheels/*.whl --repo 9PM1/VastAI --title <tag> --notes ...
+#   gh release create <tag> /root/wheels/*.whl --repo kanokpan-m/comfortable-vastai --title <tag> --notes ...
 set -Eeuo pipefail
 XTRA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$XTRA_DIR/lib/common.sh"

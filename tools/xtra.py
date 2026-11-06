@@ -37,6 +37,8 @@ import urllib.request
 from pathlib import Path
 
 TEMPLATE_ID = int(os.environ.get("XTRA_TEMPLATE_ID", "733467"))
+REPO = "kanokpan-m/comfortable-vastai"
+PROVISIONING_URL = f"https://raw.githubusercontent.com/{REPO}/refs/heads/main/provis.sh"
 VOLUME_LABEL = "comfy-xtra-models"
 VOLUME_MOUNT = "/mnt/models"
 # Same host-quality filters as the template, plus single-GPU.
@@ -638,6 +640,11 @@ def cmd_rent(a):
         print(describe_needs(needs) + "\n")
     t = template()
     env = {}
+    # Install from this repo even if the Vast template still points at another one (--set can still override).
+    if template_env("PROVISIONING_SCRIPT") != PROVISIONING_URL:
+        env["PROVISIONING_SCRIPT"] = PROVISIONING_URL
+    if template_env("XTRA_REPO") not in ("", REPO):
+        env["XTRA_REPO"] = REPO
     if a.bundles:
         env["XTRA_BUNDLES"] = a.bundles
     for kv in a.set or []:
