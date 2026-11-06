@@ -4,7 +4,7 @@ import json
 
 from aiohttp import web
 
-from . import autostop, backup, bench, fixer, health, library, sources, system, updater
+from . import autostop, backup, bench, fixer, health, library, sources, system, updater, workflowsync
 from .api import _body, _dl, _store, ok
 from .events import bus
 from .util import log
@@ -243,3 +243,16 @@ async def update_apply(request):
 async def comfy_restart_after_update(request):
     (updater.INSTALL_DIR / ".restart_comfy").unlink(missing_ok=True)
     return ok({"result": await system.restart_comfy()})
+
+
+# ---- workflow sync ----------------------------------------------------------------------------
+@routes.get("/api/workflows/sync")
+async def workflow_sync_status(request):
+    return ok(workflowsync.status(_store(request)))
+
+
+@routes.post("/api/workflows/sync/run")
+async def workflow_sync_run(request):
+    st = _store(request)
+    changes = await asyncio.to_thread(workflowsync.sync_once, st)
+    return ok({**workflowsync.status(st), "changes": changes})

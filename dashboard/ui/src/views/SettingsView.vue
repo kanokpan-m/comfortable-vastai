@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import {
   KeyRound, Download, Eye, Palette, Database, Info, CircleCheck, CircleAlert, ExternalLink, Clock, CloudUpload,
-  ArrowUpCircle, Bell, HardDrive, LoaderCircle, RotateCcw, Lock,
+  ArrowUpCircle, Bell, HardDrive, LoaderCircle, RotateCcw, Lock, Workflow, RefreshCw,
 } from '@lucide/vue'
 import { api } from '../lib/api'
 import { ago, bytes } from '../lib/format'
@@ -40,6 +40,17 @@ const verify = pref('verify_hashes')
 const notifyDiscord = pref('notify_downloads')
 const showNsfw = pref('show_nsfw')
 const backupAuto = pref('backup_auto')
+const syncWorkflows = pref('sync_workflows')
+const wfSync = computed(() => app.workflowSync || app.boot.workflow_sync || {})
+const syncingWorkflows = ref(false)
+async function syncWorkflowsNow() {
+  syncingWorkflows.value = true
+  try {
+    const r = await api.post('workflows/sync/run')
+    app.workflowSync = r
+    app.toast(r.changes ? `Workflows synced (${r.changes} change(s))` : 'Workflows already in sync', 'success')
+  } catch (e) { app.toast(e.message, 'error') } finally { syncingWorkflows.value = false }
+}
 const concurrency = computed({ get: () => String(s.value.concurrency ?? 3), set: (v) => save('concurrency', Number(v)) })
 const autoStop = computed({ get: () => String(s.value.auto_stop_minutes || 0), set: (v) => save('auto_stop_minutes', Number(v)) })
 
@@ -150,6 +161,22 @@ onMounted(async () => { await nextTick(); document.getElementById(`s-${route.val
           </span>
         </div>
         <p v-if="app.backup?.error" class="text-xs text-danger-hover">{{ app.backup.error }}</p>
+      </div>
+    </section>
+
+    <section id="s-workflows" class="rounded-xl border border-subtle bg-panel">
+      <header class="flex items-center gap-2 border-b border-stroke px-4 py-3"><Workflow class="size-4 text-fg2" /><h2 class="font-medium">Saved workflows</h2></header>
+      <div class="space-y-3 p-4">
+        <Toggle v-model="syncWorkflows" label="Keep ComfyUI's saved workflows on every instance"
+                hint="Saved to the shared database and restored on new instances, so destroying an instance doesn't lose them. If a workflow is edited on two instances, both versions are kept." />
+        <div class="flex flex-wrap items-center gap-3">
+          <Btn :loading="syncingWorkflows" :disabled="!syncWorkflows" @click="syncWorkflowsNow"><RefreshCw class="size-4" /> Sync now</Btn>
+          <span class="text-xs text-fg2">
+            <template v-if="wfSync.last">{{ wfSync.synced }} workflow(s) · last sync {{ ago(wfSync.last) }}. </template>
+            <template v-if="!db.mongo_configured">Without MongoDB they're kept on this instance only.</template>
+          </span>
+        </div>
+        <p v-if="wfSync.error" class="text-xs text-danger-hover">{{ wfSync.error }}</p>
       </div>
     </section>
 

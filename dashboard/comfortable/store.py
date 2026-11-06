@@ -6,6 +6,7 @@ Collections (schema v2, same names in MongoDB and SQLite):
   bundles   named groups of library items (v1 "groups")
   stars     starred gallery files {id: <relative path>}
   benchmarks  GPU value benchmark results (see bench.py)
+  workflows   ComfyUI's saved workflows {id, path, data, hash, deleted} (see workflowsync.py)
   meta      {id: "schema", version}
 
 Reads and writes only touch SQLite, so nothing a user does waits on the
@@ -32,7 +33,7 @@ import time
 from . import config, crypto
 from .util import log, now
 
-COLLECTIONS = ("settings", "library", "bundles", "stars", "meta", "benchmarks", "hosts")
+COLLECTIONS = ("settings", "library", "bundles", "stars", "meta", "benchmarks", "hosts", "workflows")
 SCHEMA_VERSION = 2
 SYNC_INTERVAL = 15
 FULL_SYNC = 600          # seconds between full pulls
@@ -51,6 +52,7 @@ DEFAULT_SETTINGS = {
     "auto_stop_minutes": 0,   # 0 = never
     "backup_repo": "",        # Hugging Face dataset, e.g. "you/comfy-outputs"
     "backup_auto": False,     # back up after each finished ComfyUI job
+    "sync_workflows": True,   # keep ComfyUI's saved workflows in the shared store (workflowsync.py)
 }
 
 

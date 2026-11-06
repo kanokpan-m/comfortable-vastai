@@ -8,7 +8,7 @@ from pathlib import Path
 os.environ.setdefault("COMFORTABLE_WORKSPACE", tempfile.mkdtemp())
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "dashboard"))
 
-from comfortable import config, crypto, store  # noqa: E402
+from comfortable import config, crypto, store, workflowsync  # noqa: E402
 
 
 def fresh_store():
@@ -162,6 +162,80 @@ class Sync(unittest.TestCase):
         self.a.sync()
         self.assertEqual(self.a.status()["pending_writes"], 0)
         self.assertEqual(self.mongo.library.find_one({"id": "1"})["name"], "queued")
+
+
+@unittest.skipIf(mongomock is None, "needs mongomock")
+class WorkflowSync(unittest.TestCase):
+    """Two instances, each with its own ComfyUI folder, sharing one MongoDB."""
+
+    def setUp(self):
+        self.mongo = mongomock.MongoClient()["test"]
+        self.dirs = {}
+        self.a, self.b = self.instance("a"), self.instance("b")
+        saved = config.COMFY_DIR, config.DATA_DIR
+        self.addCleanup(lambda: (setattr(config, "COMFY_DIR", saved[0]), setattr(config, "DATA_DIR", saved[1])))
+
+    def instance(self, name):
+        st = fresh_store()
+        st._connect = lambda: self.mongo
+        self.dirs[name] = Path(tempfile.mkdtemp())
+        return st
+
+    def run_on(self, name):
+        """Sync the store, run a workflow pass as that instance, push the result."""
+        st = getattr(self, name)
+        config.COMFY_DIR, config.DATA_DIR = self.dirs[name] / "ComfyUI", self.dirs[name] / "data"
+        st._last_full = 0  # tests run within one second: always pull everything
+        st.sync()
+        changes = workflowsync.sync_once(st)
+        st.sync()
+        return changes
+
+    def wf(self, name, path):
+        return self.dirs[name] / "ComfyUI" / "user" / "default" / "workflows" / path
+
+    def write(self, name, path, text):
+        f = self.wf(name, path)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+
+    def test_new_instance_gets_every_workflow(self):
+        self.write("a", "flux.json", '{"v": 1}')
+        self.write("a", "video/wan.json", '{"v": 2}')
+        self.run_on("a")
+        self.run_on("b")
+        self.assertEqual(self.wf("b", "flux.json").read_text(), '{"v": 1}')
+        self.assertEqual(self.wf("b", "video/wan.json").read_text(), '{"v": 2}')
+
+    def test_edit_on_one_reaches_the_other(self):
+        self.write("a", "x.json", "v1"); self.run_on("a"); self.run_on("b")
+        self.write("b", "x.json", "v2"); self.run_on("b"); self.run_on("a")
+        self.assertEqual(self.wf("a", "x.json").read_text(), "v2")
+
+    def test_edits_on_both_keep_both(self):
+        self.write("a", "x.json", "v1"); self.run_on("a"); self.run_on("b")
+        self.write("a", "x.json", "from a"); self.write("b", "x.json", "from b")
+        self.run_on("a"); self.run_on("b"); self.run_on("a")
+        texts = {self.wf("b", "x.json").read_text(), self.wf("b", "x (from another instance).json").read_text()}
+        self.assertEqual(texts, {"from a", "from b"})
+
+    def test_delete_moves_the_other_copy_to_trash(self):
+        self.write("a", "x.json", "v1"); self.run_on("a"); self.run_on("b")
+        self.wf("a", "x.json").unlink(); self.run_on("a"); self.run_on("b")
+        self.assertFalse(self.wf("b", "x.json").exists())
+        self.assertTrue(list((self.dirs["b"] / "data" / "workflow-trash").rglob("x.json")))
+        self.run_on("a")
+        self.assertFalse(self.wf("a", "x.json").exists())  # not restored on the instance that deleted it
+
+    def test_edit_after_delete_elsewhere_is_kept(self):
+        self.write("a", "x.json", "v1"); self.run_on("a"); self.run_on("b")
+        self.wf("a", "x.json").unlink(); self.run_on("a")
+        self.write("b", "x.json", "edited"); self.run_on("b"); self.run_on("a")
+        self.assertEqual(self.wf("a", "x.json").read_text(), "edited")
+
+    def test_unchanged_pass_changes_nothing(self):
+        self.write("a", "x.json", "v1"); self.run_on("a")
+        self.assertEqual(self.run_on("a"), 0)
 
 
 if __name__ == "__main__":

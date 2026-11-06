@@ -24,6 +24,7 @@ export const useApp = defineStore('app', {
     bench: { running: false, step: '', error: '' },
     autostop: null,      // auto-stop status
     backup: null,        // backup status
+    workflowSync: null,  // saved-workflow sync status
     update: null,        // in-place update info
     paletteOpen: false,
   }),
@@ -92,6 +93,7 @@ export const useApp = defineStore('app', {
         if (a.warned && !this.autostop?.warned) notify('Instance idle', 'It will stop soon to save money. Open Comfortable to keep it running.')
         this.autostop = { ...(this.autostop || {}), ...a }
       })
+      on('workflow-sync', (w) => { this.workflowSync = w })
       on('sync-conflict', (c) => {
         // Two instances edited the same record before syncing: say which edit was kept.
         this.boot.store = { ...(this.boot.store || {}), conflicts: [c, ...(this.boot.store?.conflicts || [])].slice(0, 10) }

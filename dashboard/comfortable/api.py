@@ -6,7 +6,7 @@ import re
 
 from aiohttp import web
 
-from . import __version__, config, gallery, models, sources, system, workflows
+from . import __version__, config, gallery, models, sources, system, workflows, workflowsync
 from .events import bus
 from .sources import SourceError
 from .store import SECRET_KEYS
@@ -89,6 +89,7 @@ async def bootstrap_data(app):
         "installed": _installed_version(),
         "model_volume": str(config.MODEL_VOLUME) if config.MODEL_VOLUME and config.MODEL_VOLUME.is_dir() else "",
         "embedded_proxy": True,
+        "workflow_sync": workflowsync.status(st),
     }
 
 
@@ -137,7 +138,7 @@ async def put_settings(request):
             changes[key] = bool(value)
         elif key == "auto_stop_minutes":
             changes[key] = max(0, min(24 * 60, int(value or 0)))
-        elif key == "backup_auto":
+        elif key in ("backup_auto", "sync_workflows"):
             changes[key] = bool(value)
         elif key == "backup_repo":
             v = str(value or "").strip().removeprefix("https://huggingface.co/datasets/").strip("/")

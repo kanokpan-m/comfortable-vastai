@@ -29,6 +29,8 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   guess: you pick from suggestions ranked by your checkpoint's base model, and the pick is
   remembered in your library. A downloaded file that turns out to be a VAE is refused anywhere but
   the VAE folders.
+- **Saved workflows on every instance.** Workflows you save in ComfyUI are kept in the shared
+  database and restored on new instances; one edited on two instances keeps both versions.
 - **Library and bundles.** Save models (Civitai, Hugging Face, any URL) into bundles; turn a
   workflow's models into a bundle; mark bundles to install automatically on every new instance.
   Library entries are re-checked in the background and flagged when their source disappears.
