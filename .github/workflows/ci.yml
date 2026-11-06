@@ -58,3 +58,13 @@ jobs:
       - name: Server log
         if: always()
         run: cat "$RUNNER_TEMP/server.log"
+
+  update-sim:
+    name: In-place update simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the simulation installs commit 0b37f67 (last pre-rename layout) first
+      - name: Simulate pre-rename instance -> update -> migration -> update
+        run: sudo -E bash tests/update_sim.sh

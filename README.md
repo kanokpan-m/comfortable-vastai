@@ -131,6 +131,7 @@ as a Claude Code skill: copy that folder plus `tools/comfortable.py` to `~/.clau
 | `supervisor/` | supervisord program definition and launcher. |
 | `tools/` | `comfortable.py` (rent/manage CLI), `claude-skill/`, `build-sage-wheel.sh` (the SageAttention wheel published as a release). |
 | `tests/api_test.py` | End-to-end API test, run by CI against a local server. |
+| `tests/update_sim.sh` | CI simulation of in-place updates on a fake instance (fake `curl` and `supervisorctl`): a pre-rename `/opt/comfy-xtra` install updates, migrates to `/opt/comfortable`, then updates again. Writes to `/opt`, so run it only in CI or a throwaway machine. |
 
 ## Development
 
