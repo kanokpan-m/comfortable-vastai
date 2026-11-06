@@ -4,7 +4,7 @@ import json
 
 from aiohttp import web
 
-from . import autostop, backup, bench, fixer, health, library, nodepins, sources, system, updater, workflowsync
+from . import autostop, backup, bench, fixer, health, library, nodepins, sources, spend, system, updater, workflowsync
 from .api import _body, _dl, _store, ok
 from .events import bus
 from .util import log
@@ -221,8 +221,10 @@ async def autostop_status(request):
 
 @routes.post("/api/activity")
 async def comfy_activity(request):
-    """The ComfyUI extension reports that someone is using the page."""
+    """The ComfyUI extension reports that someone is using the page (and, on queue, which workflow)."""
     autostop.activity()
+    if request.can_read_body:
+        spend.set_workflow((await _body(request)).get("workflow"))
     return ok({"ok": True})
 
 
@@ -296,3 +298,13 @@ async def bundle_install_nodes(request):
     force = bool((await _body(request) if request.can_read_body else {}).get("force"))
     nodepins.start(bundle, force)
     return ok({"started": True, "packs": len(bundle.get("nodes") or [])})
+
+
+# ---- spend ---------------------------------------------------------------------------------------
+@routes.get("/api/spend")
+async def spend_summary(request):
+    days = max(1, min(366, int(request.query.get("days") or 30)))
+    records = _store(request).all("spend")
+    if request.query.get("raw"):  # for `comfortable spend` when there's no MongoDB
+        return ok({"records": records})
+    return ok(spend.summary(records, days))

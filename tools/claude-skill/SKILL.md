@@ -20,6 +20,7 @@ python comfortable.py tunnel [ID]               # dashboard http://localhost:178
 python comfortable.py fix WORKFLOW.json [ID]    # missing models / custom nodes and where each would come from
 python comfortable.py api PATH [ID] [-X POST -d JSON]   # any dashboard route, JSON out
 python comfortable.py logs [ID]
+python comfortable.py spend [--days 30] [--json]   # what renting cost: per day, per instance, per workflow
 python comfortable.py stop|start|destroy ID
 ```
 

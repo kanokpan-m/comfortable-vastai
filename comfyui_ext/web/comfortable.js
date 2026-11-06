@@ -1,6 +1,7 @@
 // Comfortable inside ComfyUI: a "Comfortable" sidebar tab with the dashboard, an automatic
 // check of every workflow you open, and the auto-stop warning.
 import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
 
 // The sidebar icon is the Comfortable logo (shipped next to this file), drawn by a CSS class.
 const LOGO = new URL("./logo.png", import.meta.url).href;
@@ -77,6 +78,11 @@ function reportActivity() {
   fetch(`${BASE}api/activity`, { method: "POST" }).catch(() => {});
 }
 for (const ev of ["pointerdown", "keydown", "wheel"]) window.addEventListener(ev, reportActivity, { passive: true, capture: true });
+// Which workflow a queued job belongs to, so the spend report can say what each workflow costs.
+api.addEventListener("promptQueued", () => {
+  const workflow = app.extensionManager?.workflow?.activeWorkflow?.filename || "";
+  fetch(`${BASE}api/activity`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workflow }) }).catch(() => {});
+});
 
 // Auto-stop warning, shown over ComfyUI.
 function showBanner(status) {

@@ -6,6 +6,7 @@ Collections (schema v2, same names in MongoDB and SQLite):
   bundles   named groups of library items (v1 "groups")
   stars     starred gallery files {id: <relative path>}
   benchmarks  GPU value benchmark results (see bench.py)
+  spend       cost per instance, per day and per workflow (see spend.py)
   workflows   ComfyUI's saved workflows {id, path, data, hash, deleted} (see workflowsync.py)
   meta      {id: "schema", version}
 
@@ -33,7 +34,7 @@ import time
 from . import config, crypto
 from .util import log, now
 
-COLLECTIONS = ("settings", "library", "bundles", "stars", "meta", "benchmarks", "hosts", "workflows")
+COLLECTIONS = ("settings", "library", "bundles", "stars", "meta", "benchmarks", "hosts", "workflows", "spend")
 SCHEMA_VERSION = 2
 SYNC_INTERVAL = 15
 FULL_SYNC = 600          # seconds between full pulls

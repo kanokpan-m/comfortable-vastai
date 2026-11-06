@@ -15,6 +15,7 @@ portal token is needed.
   comfortable stop|start|destroy ID
   comfortable api PATH [ID] [-X POST -d JSON]   any dashboard route, e.g. `comfortable api benchmark`
   comfortable logs [ID] [--lines 80]
+  comfortable spend [--days 30]  what renting cost: per day, per instance, per workflow
 Add --json to status / offers / fix / needs for machine-readable output.
 
 Prices are real costs: GPU + your disk size per hour, plus the host's download fee for the
@@ -261,6 +262,54 @@ def _shared_from_instance():
             if bench is not None:
                 return {"benchmarks": bench.get("results") or [], "hosts": dash(inst, "hosts", timeout=30) or []}
     return None
+
+
+# ---- spend (recorded by each instance's dashboard, dashboard/comfortable/spend.py) ------------------
+def spend_records():
+    """Every instance's cost record: from MongoDB, else from a running instance's dashboard."""
+    try:
+        import pymongo
+        uri = os.environ.get("MONGO_URI") or template_env("MONGO_URI")
+        if uri:
+            db = pymongo.MongoClient(uri, serverSelectionTimeoutMS=8000)[env("MONGO_DB", "comfy_xtra")]
+            return list(db["spend"].find({}, {"_id": 0}))
+    except ImportError:
+        pass
+    except Exception as exc:
+        print(f"(couldn't read spend records from MongoDB: {type(exc).__name__})", file=sys.stderr)
+    for inst in instances():
+        if inst.get("actual_status") == "running":
+            out = dash(inst, "spend?days=366&raw=1", timeout=30)
+            if out is not None:
+                return out.get("records") or []
+    return None
+
+
+def spend_summary(records, days=30, at=None):
+    """Totals over the last `days` days: per day, per instance, per workflow (same as the dashboard's)."""
+    at = at or time.time()
+    first = time.strftime("%Y-%m-%d", time.localtime(at - days * 86400))
+    per_day, per_wf, rows, total = {}, {}, [], {"hours": 0.0, "cost": 0.0, "bandwidth": 0.0}
+    for r in records:
+        inst = {"hours": 0.0, "cost": 0.0, "bandwidth": 0.0}
+        for day, d in (r.get("days") or {}).items():
+            if day >= first:
+                p = per_day.setdefault(day, {"hours": 0.0, "cost": 0.0, "bandwidth": 0.0})
+                for k in inst:
+                    p[k] += d.get(k, 0.0)
+                    inst[k] += d.get(k, 0.0)
+        if inst["hours"]:
+            for k in total:
+                total[k] += inst[k]
+            rows.append({**{k: r.get(k) for k in ("id", "gpu", "dph", "label", "last_seen")}, **inst})
+            if (r.get("last_seen") or 0) >= at - days * 86400:
+                for name, w in (r.get("workflows") or {}).items():
+                    p = per_wf.setdefault(name, {"hours": 0.0, "cost": 0.0})
+                    p["hours"] += w.get("hours", 0.0)
+                    p["cost"] += w.get("cost", 0.0)
+    return {"total": total, "per_day": dict(sorted(per_day.items(), reverse=True)),
+            "instances": sorted(rows, key=lambda i: i.get("last_seen") or 0, reverse=True),
+            "workflows": dict(sorted(per_wf.items(), key=lambda kv: -kv[1]["cost"]))}
 
 
 # ---- bad-host memory ---------------------------------------------------------------------------
@@ -881,6 +930,34 @@ def cmd_status(a):
         print(json.dumps(results, indent=1))
 
 
+def cmd_spend(a):
+    records = spend_records()
+    if records is None:
+        die("no spend records: they need MONGO_URI (here or in the template) or a running instance")
+    s = spend_summary(records, a.days)
+    if a.json:
+        print(json.dumps(s, indent=1))
+        return
+    t = s["total"]
+    usd = lambda x: f"${x:,.2f}"
+    print(f"Last {a.days} days: {usd(t['cost'] + t['bandwidth'])} "
+          f"({usd(t['cost'])} GPU + disk over {t['hours']:.1f} h, about {usd(t['bandwidth'])} bandwidth)\n")
+    if s["per_day"]:
+        print("Per day:")
+        for day, d in list(s["per_day"].items())[:14]:
+            print(f"  {day}  {usd(d['cost'] + d['bandwidth']):>8}  {d['hours']:5.1f} h")
+    if s["instances"]:
+        print("\nPer instance:")
+        for i in s["instances"]:
+            print(f"  {i['id']:>9}  {(i.get('gpu') or '?')[:16]:<16} {usd(i['cost'] + i['bandwidth']):>8}  {i['hours']:5.1f} h"
+                  f"  at {money(i.get('dph'))}  {i.get('label') or ''}")
+    if s["workflows"]:
+        print("\nPer workflow (GPU-busy time, while it was the last one queued):")
+        for name, w in list(s["workflows"].items())[:10]:
+            print(f"  {usd(w['cost']):>8}  {w['hours']:5.1f} h  {name}")
+    print("\nRecorded by each instance's dashboard while it runs; storage billed while stopped isn't included.")
+
+
 def cmd_hosts(a):
     if a.forget:
         ids = forget_bad(a.forget)
@@ -1028,6 +1105,8 @@ def main():
     p.add_argument("workflow"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_needs)
     p = sub.add_parser("status", help="instances and their dashboard / host health")
     p.add_argument("id", nargs="?"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_status)
+    p = sub.add_parser("spend", help="what renting cost: per day, per instance, per workflow")
+    p.add_argument("--days", type=int, default=30); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_spend)
     p = sub.add_parser("hosts", help="machines skipped because they failed the host check")
     p.add_argument("--forget", metavar="MACHINE_ID|all"); p.add_argument("--refresh", action="store_true")
     p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_hosts)

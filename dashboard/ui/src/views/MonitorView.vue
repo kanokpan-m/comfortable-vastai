@@ -9,6 +9,7 @@ import Bar from '../components/ui/Bar.vue'
 import Sparkline from '../components/Sparkline.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import HealthCard from '../components/HealthCard.vue'
+import SpendCard from '../components/SpendCard.vue'
 import BenchmarkCard from '../components/BenchmarkCard.vue'
 
 const app = useApp()
@@ -128,6 +129,7 @@ async function act(name, path, ok) {
       <div class="grid gap-4 lg:grid-cols-2">
         <HealthCard />
         <BenchmarkCard />
+        <SpendCard />
       </div>
     </template>
     <ConfirmDialog v-model:open="restartOpen" title="Restart ComfyUI?" text="Running and queued jobs will be lost. ComfyUI is back in about 20–60 seconds." confirm="Restart" :loading="busy === 'restart'"

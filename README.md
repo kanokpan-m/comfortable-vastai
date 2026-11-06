@@ -41,6 +41,8 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   you a fraction of the GPU you paid for.
   While jobs run it keeps watching: a GPU that throttles (heat, power brake) for most of a
   10-minute stretch triggers a warning and marks the machine poor, so renting skips it next time.
+- **Spending.** Every instance records what it costs (GPU + disk at Vast's price, estimated
+  bandwidth, and GPU time per workflow) in the shared database: a Monitor card and `comfortable spend`.
 - **GPU value.** Standard SD 1.5, SDXL and Flux benchmarks, saved with the price, give images per
   dollar for every GPU you rent (the dashboard downloads the SDXL / Flux test model on request).
   `offers --for workflow.json` ranks with the benchmark matching the workflow's model family.
@@ -89,6 +91,7 @@ python tools/comfortable.py status            # GPU, ComfyUI, disk, host health
 python tools/comfortable.py tunnel            # dashboard on localhost:17890, ComfyUI on localhost:17891
 python tools/comfortable.py fix my_workflow.json
 python tools/comfortable.py destroy 12345678
+python tools/comfortable.py spend --days 30   # what renting cost: per day, per instance, per workflow
 ```
 
 `offers` and `rent` price hosts at what they really cost (GPU + your disk size + the host's
