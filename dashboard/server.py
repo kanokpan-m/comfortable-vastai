@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from aiohttp import web  # noqa: E402
 
-from comfortable import __version__, api, api_more, autostop, backup, config, fixer, health, library, models, notify, store, system, workflowsync  # noqa: E402
+from comfortable import __version__, api, api_more, autostop, backup, config, fixer, health, hostwatch, library, models, notify, store, system, workflowsync  # noqa: E402
 from comfortable.downloads import DownloadManager  # noqa: E402
 from comfortable.events import bus  # noqa: E402
 from comfortable.util import human_size, log  # noqa: E402
@@ -85,7 +85,7 @@ async def on_startup(app):
     system.on_job_done = schedule_backup(app, loop)
     app["bg"] = [asyncio.create_task(system.monitor_loop()), asyncio.create_task(system.comfy_ws_loop()),
                  asyncio.create_task(autostop.loop(app["store"], app["downloads"])), asyncio.create_task(boot_tasks(app)),
-                 asyncio.create_task(workflowsync.loop(app["store"]))]
+                 asyncio.create_task(workflowsync.loop(app["store"])), asyncio.create_task(hostwatch.loop(app["store"]))]
     auto_install(app)
     st = app["store"]
     disk = (await system.snapshot())["disk"]

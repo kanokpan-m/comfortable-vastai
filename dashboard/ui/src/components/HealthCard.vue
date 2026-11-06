@@ -9,6 +9,7 @@ import Tag from './ui/Tag.vue'
 
 const app = useApp()
 const h = computed(() => app.health)
+const duringJobs = computed(() => (app.hostwatch || app.boot.hostwatch)?.finding)
 const tone = { good: 'ok', fair: 'warn', poor: 'danger' }
 const label = { good: 'Healthy host', fair: 'Some issues', poor: 'Poor host' }
 const run = () => api.post('health/host/run').catch((e) => app.toast(e.message, 'error'))
@@ -24,7 +25,10 @@ const run = () => api.post('health/host/run').catch((e) => app.toast(e.message, 
     </header>
     <p v-if="app.healthRunning && !h" class="flex items-center gap-2 text-sm text-fg2"><LoaderCircle class="size-4 animate-spin" /> Measuring VRAM, PCIe, disk and network (about a minute)…</p>
     <p v-else-if="!h" class="text-sm text-fg2">Runs automatically about 20 seconds after the instance starts.</p>
-    <template v-else>
+    <p v-if="duringJobs" class="mb-3 flex items-start gap-2 rounded-md bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] px-3 py-2 text-xs text-danger-hover">
+      <TriangleAlert class="mt-0.5 size-3.5 shrink-0" /> {{ duringJobs.warning }} ({{ ago(duringJobs.at) }}). This machine is now skipped when you rent.
+    </p>
+    <template v-if="h">
       <ul v-if="h.warnings.length" class="mb-3 space-y-1.5">
         <li v-for="w in h.warnings" :key="w" class="flex items-start gap-2 rounded-md bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] px-3 py-2 text-xs text-warn">
           <TriangleAlert class="mt-0.5 size-3.5 shrink-0" /> {{ w }}

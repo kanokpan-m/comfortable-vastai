@@ -6,7 +6,7 @@ import re
 
 from aiohttp import web
 
-from . import __version__, config, gallery, models, sources, system, workflows, workflowsync
+from . import __version__, config, gallery, hostwatch, models, sources, system, workflows, workflowsync
 from .events import bus
 from .sources import SourceError
 from .store import SECRET_KEYS
@@ -90,6 +90,7 @@ async def bootstrap_data(app):
         "model_volume": str(config.MODEL_VOLUME) if config.MODEL_VOLUME and config.MODEL_VOLUME.is_dir() else "",
         "embedded_proxy": True,
         "workflow_sync": workflowsync.status(st),
+        "hostwatch": hostwatch.status(),
     }
 
 

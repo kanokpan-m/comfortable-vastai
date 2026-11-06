@@ -37,6 +37,8 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 - **Host health.** About 20 s after boot the dashboard measures usable VRAM, power limit, PCIe
   link, host→GPU copy speed, disk read and download speed, and warns about hosts that would give
   you a fraction of the GPU you paid for.
+  While jobs run it keeps watching: a GPU that throttles (heat, power brake) for most of a
+  10-minute stretch triggers a warning and marks the machine poor, so renting skips it next time.
 - **GPU value.** A standard SD 1.5 benchmark, saved with the price, gives images per dollar for
   every GPU you rent.
 - **Auto-stop or auto-destroy** after N idle minutes (editing in ComfyUI counts as activity; destroy

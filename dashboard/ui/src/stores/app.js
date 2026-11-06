@@ -25,6 +25,7 @@ export const useApp = defineStore('app', {
     autostop: null,      // auto-stop status
     backup: null,        // backup status
     workflowSync: null,  // saved-workflow sync status
+    hostwatch: null,     // GPU slowdown found while jobs ran
     update: null,        // in-place update info
     paletteOpen: false,
   }),
@@ -94,6 +95,10 @@ export const useApp = defineStore('app', {
         this.autostop = { ...(this.autostop || {}), ...a }
       })
       on('workflow-sync', (w) => { this.workflowSync = w })
+      on('hostwatch', (w) => {
+        this.hostwatch = w
+        if (w.finding) this.toast('This host is slowing down during jobs', 'error', w.finding.warning)
+      })
       on('sync-conflict', (c) => {
         // Two instances edited the same record before syncing: say which edit was kept.
         this.boot.store = { ...(this.boot.store || {}), conflicts: [c, ...(this.boot.store?.conflicts || [])].slice(0, 10) }
