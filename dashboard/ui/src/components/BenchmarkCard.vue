@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { Gauge, LoaderCircle, Play, Trash2, Trophy } from '@lucide/vue'
+import { Download, Gauge, LoaderCircle, Play, Trash2, Trophy } from '@lucide/vue'
 import { api } from '../lib/api'
 import { ago, compact } from '../lib/format'
 import { useApp } from '../stores/app'
@@ -8,19 +8,33 @@ import Btn from './ui/Btn.vue'
 import Tag from './ui/Tag.vue'
 
 // GPU value leaderboard: the same standard render on every GPU you rent, as images per dollar.
+// One board per workload (SD 1.5, SDXL, Flux): model families rank GPUs differently.
 const app = useApp()
 const results = ref([])
-const load = async () => { try { const r = await api.get('benchmark'); results.value = r.results; app.bench = r.state } catch {} }
+const workloads = ref([])
+const workload = ref('sd15')
+const current = computed(() => workloads.value.find((w) => w.id === workload.value) || {})
+const load = async () => {
+  try { const r = await api.get('benchmark'); results.value = r.results; workloads.value = r.workloads || []; app.bench = r.state } catch {}
+}
 onMounted(load)
 watch(() => app.bench?.last?.id, (id) => id && load())
 
 const best = computed(() => {
   // Best result per GPU model, ranked by images per dollar.
   const by = {}
-  for (const r of results.value) if (r.images_per_dollar && (!by[r.gpu] || r.images_per_dollar > by[r.gpu].images_per_dollar)) by[r.gpu] = r
+  for (const r of results.value.filter((x) => (x.workload || 'sd15') === workload.value)) if (r.images_per_dollar && (!by[r.gpu] || r.images_per_dollar > by[r.gpu].images_per_dollar)) by[r.gpu] = r
   return Object.values(by).sort((a, b) => b.images_per_dollar - a.images_per_dollar)
 })
-const run = () => api.post('benchmark/run').catch((e) => app.toast(e.message, 'error'))
+const run = () => api.post('benchmark/run', { workload: workload.value }).catch((e) => app.toast(e.message, 'error'))
+const downloading = computed(() => Object.values(app.downloads).some((t) => t.filename === current.value.ckpt && !['done', 'failed', 'cancelled'].includes(t.status)))
+async function download() {
+  try {
+    await api.post('downloads', { url: current.value.url, category: 'checkpoints', filename: current.value.ckpt })
+    app.toast(`Downloading ${current.value.ckpt} (${current.value.gb} GB)`, 'info')
+  } catch (e) { app.toast(e.message, 'error') }
+}
+watch(() => app.models, load)  // a finished download flips "installed"
 async function remove(r) { await api.del(`benchmark/${r.id}`).catch(() => {}); load() }
 </script>
 
@@ -28,9 +42,16 @@ async function remove(r) { await api.del(`benchmark/${r.id}`).catch(() => {}); l
   <section class="rounded-xl border border-subtle bg-panel p-4">
     <header class="mb-1 flex flex-wrap items-center gap-2">
       <h2 class="flex items-center gap-2 font-medium"><Gauge class="size-4 text-fg2" /> GPU value</h2>
-      <Btn size="sm" class="ml-auto" :loading="app.bench?.running" @click="run"><Play class="size-3.5" /> {{ app.bench?.running ? 'Running' : 'Benchmark this GPU' }}</Btn>
+      <div v-if="workloads.length > 1" class="ml-auto flex rounded-md border border-subtle bg-card p-0.5" role="radiogroup" aria-label="Benchmark workload">
+        <button v-for="w in workloads" :key="w.id" role="radio" :aria-checked="workload === w.id"
+                class="h-6 rounded px-2 text-xs font-medium" :class="workload === w.id ? 'bg-selected text-fg' : 'text-fg2 hover:text-fg'"
+                @click="workload = w.id">{{ w.label }}</button>
+      </div>
+      <Btn v-if="current.installed === false" size="sm" :class="workloads.length > 1 ? '' : 'ml-auto'" :loading="downloading" @click="download">
+        <Download class="size-3.5" /> {{ downloading ? 'Downloading' : `Get test model (${current.gb} GB)` }}</Btn>
+      <Btn v-else size="sm" :class="workloads.length > 1 ? '' : 'ml-auto'" :loading="app.bench?.running" @click="run"><Play class="size-3.5" /> {{ app.bench?.running ? 'Running' : 'Benchmark this GPU' }}</Btn>
     </header>
-    <p class="mb-3 text-xs text-fg2">A standard SD 1.5 render (512×512, 20 steps, batch of 4) on every GPU you rent, saved with its price, so you can see which card gives you the most images per dollar.</p>
+    <p class="mb-3 text-xs text-fg2">The same {{ current.label || 'SD 1.5' }} render ({{ current.test || 'sd15-512-20steps-b4' }}) on every GPU you rent, saved with its price, so you can see which card gives you the most images per dollar. <code class="text-muted">comfortable offers --for</code> ranks with the board that matches your workflow.</p>
     <p v-if="app.bench?.running" class="mb-3 flex items-center gap-2 text-sm text-fg2"><LoaderCircle class="size-4 animate-spin" /> {{ app.bench.step }}…</p>
     <p v-if="app.bench?.error" class="mb-3 rounded-md bg-[color-mix(in_srgb,var(--destructive-hover)_12%,transparent)] px-3 py-2 text-xs text-danger-hover">{{ app.bench.error }}</p>
 

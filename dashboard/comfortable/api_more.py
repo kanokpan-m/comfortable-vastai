@@ -175,7 +175,9 @@ async def hosts_list(request):
 @routes.get("/api/benchmark")
 async def bench_list(request):
     results = sorted(_store(request).all("benchmarks"), key=lambda r: r.get("created_at", 0), reverse=True)
-    return ok({"state": bench.state(), "results": results})
+    for r in results:
+        r["workload"] = bench.workload_of(r)
+    return ok({"state": bench.state(), "results": results, "workloads": await bench.workloads()})
 
 
 @routes.post("/api/benchmark/run")
@@ -183,13 +185,16 @@ async def bench_run(request):
     app = request.app
     if bench.state()["running"]:
         raise ValueError("A benchmark is already running")
-    app["bench_task"] = asyncio.create_task(_bench_bg(app))
-    return ok({"started": True})
+    key = (await _body(request) if request.can_read_body else {}).get("workload") or "sd15"
+    if key not in bench.WORKLOADS:
+        raise ValueError(f"Unknown benchmark {key!r}")
+    app["bench_task"] = asyncio.create_task(_bench_bg(app, key))
+    return ok({"started": True, "workload": key})
 
 
-async def _bench_bg(app):
+async def _bench_bg(app, key="sd15"):
     try:
-        await bench.run(app["store"])
+        await bench.run(app["store"], key)
     except Exception:
         pass  # error is published in bench state
 

@@ -12,7 +12,7 @@ Python install that owns `vastai`. It reaches the instance over SSH, so the user
 
 ```
 python comfortable.py status [ID] [--json]      # instances + dashboard, ComfyUI, GPU use, disk, host health
-python comfortable.py offers [--gpu RTX_5090,RTX_4090] [--max-price 0.8] [--min-vram 24] [--rank value|speed] [--for WORKFLOW.json] [--disk 100] [--json]
+python comfortable.py offers [--gpu RTX_5090,RTX_4090] [--max-price 0.8] [--min-vram 24] [--rank value|speed] [--for WORKFLOW.json] [--workload sd15|sdxl|flux] [--disk 100] [--json]
 python comfortable.py rent --offer ID [--disk 100] [--bundles a,b] [--keep-models] [--set KEY=VALUE] --yes [--dry-run]
 python comfortable.py needs WORKFLOW.json       # VRAM and download size a workflow needs (no instance required)
 python comfortable.py hosts [--forget ID|all]   # machines skipped after failing the host check

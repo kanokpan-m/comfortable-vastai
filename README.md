@@ -39,8 +39,9 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   you a fraction of the GPU you paid for.
   While jobs run it keeps watching: a GPU that throttles (heat, power brake) for most of a
   10-minute stretch triggers a warning and marks the machine poor, so renting skips it next time.
-- **GPU value.** A standard SD 1.5 benchmark, saved with the price, gives images per dollar for
-  every GPU you rent.
+- **GPU value.** Standard SD 1.5, SDXL and Flux benchmarks, saved with the price, give images per
+  dollar for every GPU you rent (the dashboard downloads the SDXL / Flux test model on request).
+  `offers --for workflow.json` ranks with the benchmark matching the workflow's model family.
 - **Auto-stop or auto-destroy** after N idle minutes (editing in ComfyUI counts as activity; destroy
   backs up first and falls back to stop), plus an hours or dollars **budget cap** that applies even
   while busy (warns 5 minutes ahead, inside ComfyUI too), **output backup**

@@ -489,9 +489,33 @@ def _typical(values):
     return values[int(len(values) * 0.75)] if len(values) >= 4 else values[-1]
 
 
+# Benchmark workloads the dashboard runs (dashboard/comfortable/bench.py), and how to spot them in a workflow.
+WORKLOADS = {"sd15": "SD 1.5 512px", "sdxl": "SDXL 1024px", "flux": "Flux 1024px"}
+WORKLOAD_HINTS = (("flux", ("flux",)),
+                  ("sdxl", ("sdxl", "sd_xl", "xl_base", "pony", "illustrious", "noob", "juggernautxl", "realvisxl", "xl-", "_xl")),
+                  ("sd15", ("v1-5", "sd15", "sd1.5", "sd-1-5", "v1_5")))
+
+
+def workload_for(needs):
+    """The benchmark that best matches a workflow (from its model file names), or None (e.g. video)."""
+    if not needs or needs.get("video"):
+        return None
+    names = " ".join(f["name"].lower() for f in needs.get("files") or [] if f.get("active"))
+    for key, hints in WORKLOAD_HINTS:
+        if any(h in names for h in hints):
+            return key
+    return None
+
+
+def workload_of(bench):
+    """Results saved before workloads existed are SD 1.5."""
+    return bench.get("workload") or (bench.get("test") or "sd15").split("-")[0]
+
+
 def rank_offers(offers, benchmarks, disk_gb=100, download_gb=20, hours=4, mode="value", allow_slow=False, bad=None,
-                max_download_per_tb=MAX_DOWNLOAD_PER_TB, max_upload_per_tb=MAX_UPLOAD_PER_TB):
-    """Annotate offers with real cost, expected speed and value; return (ranked, hidden_counts)."""
+                max_download_per_tb=MAX_DOWNLOAD_PER_TB, max_upload_per_tb=MAX_UPLOAD_PER_TB, workload="sd15"):
+    """Annotate offers with real cost, expected speed and value; return (ranked, hidden_counts).
+    Speeds come from benchmarks of `workload`; with none of those yet, from SD 1.5 (hidden["workload"] says which)."""
     by_model = {}
     for o in offers:
         by_model.setdefault(norm_gpu(o.get("gpu_name")), []).append(o)
@@ -507,8 +531,11 @@ def rank_offers(offers, benchmarks, disk_gb=100, download_gb=20, hours=4, mode="
         return math.sqrt((dl or 96.4) / 96.4 * (fl or 81.4) / 81.4) if dl or fl else None
 
     # Images/hour: per GPU model from your benchmarks; otherwise 4090-equivalents x relative speed.
+    matching = [b for b in benchmarks or [] if workload_of(b) == workload]
+    used = workload if matching else "sd15"
+    pool = matching if matching else [b for b in benchmarks or [] if workload_of(b) == "sd15"] + SEED_BENCH
     per_model, per_4090 = {}, []
-    for b in list(benchmarks or []) + SEED_BENCH:
+    for b in pool:
         ips, model = b.get("images_per_hour"), norm_gpu(b.get("gpu"))
         if not ips:
             continue
@@ -517,7 +544,7 @@ def rank_offers(offers, benchmarks, disk_gb=100, download_gb=20, hours=4, mode="
         if relative(model):
             per_4090.append(ips / relative(model))
     ips_4090 = statistics.median(per_4090)
-    hidden = {"slow": 0, "bad": 0, "bandwidth": 0}
+    hidden = {"slow": 0, "bad": 0, "bandwidth": 0, "workload": used}
     full_power = {m: max((o.get("gpu_max_power") or 0) for o in os_) for m, os_ in by_model.items()}
     out = []
     for o in offers:
@@ -568,7 +595,7 @@ def search_offers(a, machine_id=None, bad=None, shared=None):
     shared = shared if shared is not None else shared_data(a.refresh)
     ranked, hidden = rank_offers(offers, shared.get("benchmarks"), a.disk, a.download_gb, a.hours, a.rank,
                                  a.allow_slow, bad if bad is not None else bad_hosts(shared), a.max_download_per_tb,
-                                 a.max_upload_per_tb)
+                                 a.max_upload_per_tb, getattr(a, "workload", None) or "sd15")
     if a.max_price:
         ranked = [o for o in ranked if o["_cost_h"] <= a.max_price]
     return ranked, hidden
@@ -584,6 +611,8 @@ def apply_workflow(a):
         a.min_vram = needs["min_vram_gb"]
     if a.download_gb is None:
         a.download_gb = needs["download_gb"]
+    if not getattr(a, "workload", None):
+        a.workload = workload_for(needs)
     return needs
 
 
@@ -641,10 +670,14 @@ def cmd_offers(a):
     print(f"\n$/H = GPU + {a.disk} GB disk + download fee for {a.download_gb:g} GB spread over {a.hours:g} h. "
           f"DL/UL $/TB = what the host charges to download/upload (over ${a.max_download_per_tb:g}/${a.max_upload_per_tb:g} hidden). "
           "POWER = the host's power limit vs. the fullest card of that model (speed scaled to match). "
-          "IMG/H = SD 1.5 512px images per hour (~ = estimated, no benchmark of yours for that GPU yet). "
+          f"IMG/H = {WORKLOADS[hidden.get('workload', 'sd15')]} images per hour (~ = estimated, no benchmark of yours for that GPU yet). "
           "HOST = this host's score vs. healthy hosts with the same GPU.")
     if describe_hidden(hidden, a):
         print(describe_hidden(hidden, a))
+    wanted = getattr(a, "workload", None)
+    if wanted and hidden.get("workload") != wanted:
+        print(f"No {WORKLOADS[wanted]} benchmarks of yours yet, so speeds are SD 1.5 estimates. Run one on an instance: "
+              f"comfortable api benchmark/run -X POST -d '{{\"workload\": \"{wanted}\"}}'")
 
 
 def find_volume():
@@ -955,7 +988,8 @@ def add_offer_args(p):
     p.add_argument("--min-vram", type=int, help="GB of VRAM (set automatically by --for)")
     p.add_argument("--rank", choices=("value", "speed"), default="value",
                    help="value: most images per dollar (default); speed: fastest within --max-price")
-    p.add_argument("--for", dest="workflow_for", metavar="WORKFLOW", help="workflow .json: sets --min-vram and --download-gb")
+    p.add_argument("--for", dest="workflow_for", metavar="WORKFLOW", help="workflow .json: sets --min-vram, --download-gb and --workload")
+    p.add_argument("--workload", choices=tuple(WORKLOADS), help="benchmark to rank speed by: sd15 (default), sdxl or flux (set by --for)")
     p.add_argument("--disk", type=int, default=100, help="instance disk in GB (priced in)")
     p.add_argument("--download-gb", type=float, default=None, help="GB of models you'll download (default 20, or from --for)")
     p.add_argument("--hours", type=float, default=4, help="how long you'll use it, to spread the download fee (default 4)")

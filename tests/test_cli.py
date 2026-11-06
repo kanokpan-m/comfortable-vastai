@@ -131,6 +131,42 @@ class Ranking(unittest.TestCase):
         self.assertEqual(hidden["bad"], 1)
 
 
+class Workloads(unittest.TestCase):
+    def needs(self, *names):
+        return cli.workflow_needs({"nodes": [node("CheckpointLoaderSimple", n) for n in names]}, sizes={})
+
+    def test_workflow_family_is_detected(self):
+        self.assertEqual(cli.workload_for(self.needs("flux1-dev-fp8.safetensors")), "flux")
+        self.assertEqual(cli.workload_for(self.needs("juggernautXL_v9.safetensors")), "sdxl")
+        self.assertEqual(cli.workload_for(self.needs("v1-5-pruned-emaonly.safetensors")), "sd15")
+        self.assertIsNone(cli.workload_for(self.needs("mystery_model.safetensors")))
+        video = cli.workflow_needs({"nodes": [node("UNETLoader", "wan2.2_t2v_14B_fp8_scaled.safetensors", "default")]}, sizes={})
+        self.assertIsNone(cli.workload_for(video))
+
+    def test_old_results_count_as_sd15(self):
+        self.assertEqual(cli.workload_of({"test": "sd15-512-20steps-b4"}), "sd15")
+        self.assertEqual(cli.workload_of({}), "sd15")
+        self.assertEqual(cli.workload_of({"workload": "flux", "test": "flux-1024-20steps-b1"}), "flux")
+
+    def test_ranking_uses_the_matching_workload(self):
+        # SD 1.5 says the 4090 is the better value; on Flux the 5090's bandwidth wins.
+        offers = lambda: [offer(1, "RTX 4090", 96, 0.40, 101), offer(2, "RTX 5090", 190, 0.60, 102, mem_bw=1790)]
+        bench = [{"gpu": "RTX 4090", "images_per_hour": 9000, "workload": "sd15"},
+                 {"gpu": "RTX 5090", "images_per_hour": 10000, "workload": "sd15"},
+                 {"gpu": "RTX 4090", "images_per_hour": 100, "workload": "flux"},
+                 {"gpu": "RTX 5090", "images_per_hour": 200, "workload": "flux"}]
+        sd, h = cli.rank_offers(offers(), bench, workload="sd15")
+        self.assertEqual((sd[0]["gpu_name"], h["workload"]), ("RTX 4090", "sd15"))
+        fl, h = cli.rank_offers(offers(), bench, workload="flux")
+        self.assertEqual((fl[0]["gpu_name"], h["workload"]), ("RTX 5090", "flux"))
+        self.assertEqual(round(fl[0]["_ips"]), 200)
+
+    def test_falls_back_to_sd15_without_matching_benchmarks(self):
+        ranked, h = cli.rank_offers([offer(1, "RTX 4090", 96, 0.40, 101)], [], workload="sdxl")
+        self.assertEqual(h["workload"], "sd15")
+        self.assertGreater(ranked[0]["_ips"], 0)
+
+
 class GpuNames(unittest.TestCase):
     def test_driver_and_vast_names_match(self):
         pairs = [("NVIDIA RTX PRO 4000 Blackwell", "RTX PRO 4000"), ("NVIDIA GeForce RTX 5060 Ti", "RTX_5060_Ti"),
