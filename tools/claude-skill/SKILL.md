@@ -5,22 +5,22 @@ description: Rent, check, tunnel into, fix workflows on, stop and destroy Vast.a
 
 # Comfortable on Vast.ai (formerly Comfy-Xtra)
 
-All actions go through `xtra.py` in this skill's folder (a copy of `tools/xtra.py` from the 9PM1/VastAI repo).
+All actions go through `comfortable.py` in this skill's folder (a copy of `tools/comfortable.py` from the kanokpan-m/comfortable-vastai repo).
 Run it with the Python that has the `vastai` package installed (`pip install vastai`; the API key is set
 with `vastai set api-key`). On Windows, plain `python` may be the Microsoft Store stub; use the full path of the
 Python install that owns `vastai`. It reaches the instance over SSH, so the user's SSH key must be on vast.ai.
 
 ```
-python xtra.py status [ID] [--json]      # instances + dashboard, ComfyUI, GPU use, disk, host health
-python xtra.py offers [--gpu RTX_5090,RTX_4090] [--max-price 0.8] [--min-vram 24] [--rank value|speed] [--for WORKFLOW.json] [--disk 100] [--json]
-python xtra.py rent --offer ID [--disk 100] [--bundles a,b] [--keep-models] [--set KEY=VALUE] --yes [--dry-run]
-python xtra.py needs WORKFLOW.json       # VRAM and download size a workflow needs (no instance required)
-python xtra.py hosts [--forget ID|all]   # machines skipped after failing the host check
-python xtra.py tunnel [ID]               # dashboard http://localhost:17890, ComfyUI http://localhost:17891 (blocks; run in background)
-python xtra.py fix WORKFLOW.json [ID]    # missing models / custom nodes and where each would come from
-python xtra.py api PATH [ID] [-X POST -d JSON]   # any dashboard route, JSON out
-python xtra.py logs [ID]
-python xtra.py stop|start|destroy ID
+python comfortable.py status [ID] [--json]      # instances + dashboard, ComfyUI, GPU use, disk, host health
+python comfortable.py offers [--gpu RTX_5090,RTX_4090] [--max-price 0.8] [--min-vram 24] [--rank value|speed] [--for WORKFLOW.json] [--disk 100] [--json]
+python comfortable.py rent --offer ID [--disk 100] [--bundles a,b] [--keep-models] [--set KEY=VALUE] --yes [--dry-run]
+python comfortable.py needs WORKFLOW.json       # VRAM and download size a workflow needs (no instance required)
+python comfortable.py hosts [--forget ID|all]   # machines skipped after failing the host check
+python comfortable.py tunnel [ID]               # dashboard http://localhost:17890, ComfyUI http://localhost:17891 (blocks; run in background)
+python comfortable.py fix WORKFLOW.json [ID]    # missing models / custom nodes and where each would come from
+python comfortable.py api PATH [ID] [-X POST -d JSON]   # any dashboard route, JSON out
+python comfortable.py logs [ID]
+python comfortable.py stop|start|destroy ID
 ```
 
 ## Renting safely (read before every rental)
@@ -95,7 +95,7 @@ faster hosts at $1-4/TB were available. Hence rules 2-4 and the `--offer` flag.
   tab: it shows sizes and asks before installing node packs. When testing, don't download big models (tens of
   GB) unless the user asked: use small files to check paths.
 - **Keep models between instances.** `rent --keep-models` creates (first time) or links (afterwards) a Vast
-  local volume labelled `comfy-xtra-models`, mounted at `/mnt/models`. Local volumes are tied to one machine,
+  local volume labelled `comfortable-models` (or `comfy-xtra-models`, made before the rename), mounted at `/mnt/models`. Local volumes are tied to one machine,
   so later rentals must use that machine; if it has no free GPU, say so rather than renting elsewhere silently.
 - **Auto-stop.** `api settings -X PUT -d '{"auto_stop_minutes": 30}'` stops the instance after 30 idle
   minutes (stopped instances only pay for storage).

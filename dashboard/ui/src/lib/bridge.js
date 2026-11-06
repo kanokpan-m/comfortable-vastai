@@ -1,4 +1,4 @@
-// Talking to ComfyUI when the dashboard runs inside its sidebar (see comfyui_ext/web/xtra.js).
+// Talking to ComfyUI when the dashboard runs inside its sidebar (see comfyui_ext/web/comfortable.js).
 import { ref } from 'vue'
 
 export const embedded = new URLSearchParams(location.search).has('embed') && window.parent !== window
@@ -12,14 +12,14 @@ function send(type, extra = {}) {
 if (embedded) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin) return
-    if (e.data?.type === 'xtra:workflow') parentWorkflow.value = { workflow: e.data.workflow, name: e.data.name }
-    if (e.data?.type === 'xtra:plan') parentPlan.value = e.data.plan
+    if (e.data?.type === 'comfortable:workflow') parentWorkflow.value = { workflow: e.data.workflow, name: e.data.name }
+    if (e.data?.type === 'comfortable:plan') parentPlan.value = e.data.plan
   })
 }
 
 export const bridge = {
-  requestWorkflow: () => send('xtra:get-workflow'),
-  refreshModels: () => send('xtra:refresh-models'),
-  reanalyze: () => send('xtra:reanalyze'),
-  reloadComfy: () => send('xtra:reload'),
+  requestWorkflow: () => send('comfortable:get-workflow'),
+  refreshModels: () => send('comfortable:refresh-models'),
+  reanalyze: () => send('comfortable:reanalyze'),
+  reloadComfy: () => send('comfortable:reload'),
 }

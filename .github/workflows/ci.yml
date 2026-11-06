@@ -36,17 +36,17 @@ jobs:
           pip install "aiohttp>=3.11" psutil pillow requests huggingface_hub "pymongo[srv]" certifi av
       - name: Lint shell and Python
         run: |
-          for f in provis.sh lib/*.sh; do bash -n "$f"; done
-          python -m py_compile tools/xtra.py lib/tune.py comfyui_ext/__init__.py dashboard/server.py dashboard/xtra/*.py
+          for f in provis.sh lib/*.sh supervisor/*.sh; do bash -n "$f"; done
+          python -m py_compile tools/comfortable.py lib/tune.py comfyui_ext/__init__.py dashboard/server.py dashboard/comfortable/*.py
       - name: Offline tests (CLI, fixer matching)
-        run: XTRA_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_xtra_cli.py tests/test_fixer.py
+        run: COMFORTABLE_WORKSPACE="$RUNNER_TEMP/unit" python -m unittest tests/test_cli.py tests/test_fixer.py
       - name: Start the dashboard
         env:
-          XTRA_WORKSPACE: ${{ runner.temp }}/ws
-          XTRA_PORT: "17891"
+          COMFORTABLE_WORKSPACE: ${{ runner.temp }}/ws
+          COMFORTABLE_PORT: "17891"
           COMFYUI_API_BASE: http://127.0.0.1:1
         run: |
-          mkdir -p "$XTRA_WORKSPACE"
+          mkdir -p "$COMFORTABLE_WORKSPACE"
           nohup python -u dashboard/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
           for i in $(seq 30); do curl -fs http://127.0.0.1:17891/api/health && exit 0; sleep 1; done
           cat "$RUNNER_TEMP/server.log"; exit 1

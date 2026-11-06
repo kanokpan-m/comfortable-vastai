@@ -9,17 +9,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from aiohttp import web  # noqa: E402
 
-from xtra import __version__, api, api_more, autostop, backup, config, fixer, health, library, models, notify, store, system  # noqa: E402
-from xtra.downloads import DownloadManager  # noqa: E402
-from xtra.events import bus  # noqa: E402
-from xtra.util import human_size, log  # noqa: E402
+from comfortable import __version__, api, api_more, autostop, backup, config, fixer, health, library, models, notify, store, system  # noqa: E402
+from comfortable.downloads import DownloadManager  # noqa: E402
+from comfortable.events import bus  # noqa: E402
+from comfortable.util import human_size, log  # noqa: E402
 
 
 def auto_install(app):
     """Queue library items marked auto-install, plus every item in auto-install bundles
-    (flagged in the UI, or named in the XTRA_BUNDLES env var), that are not on disk yet."""
+    (flagged in the UI, or named in the COMFORTABLE_BUNDLES env var), that are not on disk yet."""
     st = app["store"]
-    wanted = {b.strip().lower() for b in os.environ.get("XTRA_BUNDLES", "").split(",") if b.strip()}
+    wanted = {b.strip().lower() for b in config.env("BUNDLES", "").split(",") if b.strip()}
     bundle_ids = {b["id"] for b in st.all("bundles")
                   if b.get("auto_install") or b["id"].lower() in wanted or (b.get("name") or "").lower() in wanted}
     idx = models.index()
@@ -125,7 +125,7 @@ def make_app():
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
-    host = os.environ.get("XTRA_HOST", "127.0.0.1")  # reached through the Instance Portal's Caddy proxy
+    host = config.env("HOST", "127.0.0.1")  # reached through the Instance Portal's Caddy proxy
     log.info("Comfortable %s listening on %s:%d", __version__, host, config.PORT)
     web.run_app(make_app(), host=host, port=config.PORT, access_log=None, print=None)
 

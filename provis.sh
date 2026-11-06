@@ -1,29 +1,30 @@
 #!/bin/sh
 # Comfortable entry point for Vast's PROVISIONING_SCRIPT. Keep this file LF-only.
-# Downloads this repo at XTRA_REF into /opt/comfy-xtra and runs lib/main.sh.
+# Downloads this repo at COMFORTABLE_REF into /opt/comfortable and runs lib/main.sh.
 # WARNING: port 17890 must be protected by your provider/firewall/reverse proxy if exposed publicly.
 #
 # Template env:
-#   XTRA_REPO  GitHub repo to install from      (default 9PM1/VastAI)
-#   XTRA_REF   branch, tag or commit to install (default main)
+#   COMFORTABLE_REPO  GitHub repo to install from      (default kanokpan-m/comfortable-vastai)
+#   COMFORTABLE_REF   branch, tag or commit to install (default main)
+# The XTRA_REPO / XTRA_REF names from before the rename still work.
 set -eu
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
-XTRA_REPO="${XTRA_REPO:-9PM1/VastAI}"
-XTRA_REF="${XTRA_REF:-main}"
-XTRA_DIR=/opt/comfy-xtra
-export XTRA_REPO XTRA_REF
+COMFORTABLE_REPO="${COMFORTABLE_REPO:-${XTRA_REPO:-kanokpan-m/comfortable-vastai}}"
+COMFORTABLE_REF="${COMFORTABLE_REF:-${XTRA_REF:-main}}"
+COMFORTABLE_DIR=/opt/comfortable
+export COMFORTABLE_REPO COMFORTABLE_REF
 
 # Fetch the whole repo as one archive so every file comes from the same commit.
 fetch_repo() {
-  tmp="$(mktemp -d /opt/.comfy-xtra.XXXXXX)"
+  tmp="$(mktemp -d /opt/.comfortable.XXXXXX)"
   if curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors --connect-timeout 15 \
-       "https://codeload.github.com/${XTRA_REPO}/tar.gz/${XTRA_REF}" \
+       "https://codeload.github.com/${COMFORTABLE_REPO}/tar.gz/${COMFORTABLE_REF}" \
      | tar -xz -C "$tmp" --strip-components=1 \
      && [ -f "$tmp/lib/main.sh" ]; then
     chmod 755 "$tmp"
-    rm -rf "$XTRA_DIR"
-    mv "$tmp" "$XTRA_DIR"
+    rm -rf "$COMFORTABLE_DIR"
+    mv "$tmp" "$COMFORTABLE_DIR"
     return 0
   fi
   rm -rf "$tmp"
@@ -35,9 +36,9 @@ attempt=1
 delay=5
 while [ "$attempt" -le 4 ]; do
   rc=0
-  fetch_repo && /bin/bash "$XTRA_DIR/lib/main.sh" || rc=$?
+  fetch_repo && /bin/bash "$COMFORTABLE_DIR/lib/main.sh" || rc=$?
   if [ "$rc" -eq 0 ]; then
-    echo "Comfortable provisioning completed successfully (${XTRA_REPO}@${XTRA_REF})."
+    echo "Comfortable provisioning completed successfully (${COMFORTABLE_REPO}@${COMFORTABLE_REF})."
     echo "Dashboard authentication: disabled"
     exit 0
   fi

@@ -1,6 +1,6 @@
 """End-to-end test of the Comfortable API against a running server.
 
-Usage: BASE=http://127.0.0.1:17891 python tests/api_test.py <XTRA_WORKSPACE of that server>
+Usage: BASE=http://127.0.0.1:17891 python tests/api_test.py <COMFORTABLE_WORKSPACE of that server>
 Needs internet (Civitai and Hugging Face). Exits non-zero when a check fails.
 """
 import io
@@ -15,7 +15,7 @@ import requests
 from PIL import Image, PngImagePlugin
 
 B = os.environ.get("BASE", "http://127.0.0.1:17891")
-WS = sys.argv[1]  # XTRA_WORKSPACE of the server, for creating gallery files
+WS = sys.argv[1]  # COMFORTABLE_WORKSPACE of the server, for creating gallery files
 results = []
 # Civitai refuses anonymous downloads from datacenter IPs (CI runners); with a token they work.
 CIVITAI_TOKEN = os.environ.get("CIVITAI_TOKEN", "")
