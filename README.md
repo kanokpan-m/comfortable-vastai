@@ -32,6 +32,9 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 - **Library and bundles.** Save models (Civitai, Hugging Face, any URL) into bundles; turn a
   workflow's models into a bundle; mark bundles to install automatically on every new instance.
   Library entries are re-checked in the background and flagged when their source disappears.
+  [`docs/model-packs.md`](docs/model-packs.md) lists 43 ready-made packs for current image and video
+  workflows (Qwen-Image, Krea 2, FLUX, Z-Image, MOSS, Wan 2.2, DaSiWa, LTX-2.5, MiniMax H3, ...);
+  `python tools/model_packs.py install <pack>` adds them to the library as bundles.
 - **Host health.** About 20 s after boot the dashboard measures usable VRAM, power limit, PCIe
   link, host→GPU copy speed, disk read and download speed, and warns about hosts that would give
   you a fraction of the GPU you paid for.
@@ -115,7 +118,7 @@ as a Claude Code skill: copy that folder plus `tools/comfortable.py` to `~/.clau
 | `dashboard/ui/` | Web UI source: Vue 3 + Tailwind CSS 4 + reka-ui + Lucide, the same stack and design tokens as ComfyUI's frontend. |
 | `dashboard/web/` | Built web UI (committed, so instances need no Node), served at `/`. |
 | `supervisor/` | supervisord program definition and launcher. |
-| `tools/` | `comfortable.py` (rent/manage CLI), `claude-skill/`, `build-sage-wheel.sh` (the SageAttention wheel published as a release). |
+| `tools/` | `comfortable.py` (rent/manage CLI), `model_packs.py` (curated model packs: build/verify `docs/model-packs.json`, install them as bundles), `claude-skill/`, `build-sage-wheel.sh` (the SageAttention wheel published as a release). |
 | `tests/api_test.py` | End-to-end API test, run by CI against a local server. |
 
 ## Development
