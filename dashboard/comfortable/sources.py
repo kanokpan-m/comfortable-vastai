@@ -90,14 +90,28 @@ def civitai_ids_from_url(url):
     return as_int(model), as_int(version), as_int(file_id)
 
 
+CIVITAI_MEDIA = re.compile(r"(https://image\.civitai\.com/[^/]+/[^/]+/)[^/]+/([^/.]+)\.\w+$")
+
+
+def _still(url):
+    """A Civitai video's first frame, as a JPEG from the same CDN (any other URL unchanged)."""
+    m = CIVITAI_MEDIA.match(url or "")
+    return f"{m.group(1)}transcode=true,anim=false,width=450/{m.group(2)}.jpeg" if m else url
+
+
 def _pick_preview(images, show_nsfw):
     """(url, mature) for a version's preview image.
 
     Civitai rates images with nsfwLevel 1 (PG), 2 (PG-13), 4 (R), 8 (X), 16 (XXX).
     With mature content hidden, prefer the safest image; if every image is mature,
-    still return one but flag it so the UI can blur it.
+    still return one but flag it so the UI can blur it. Video models often publish only
+    clips: then a clip's first frame is the preview. Pictures Civitai flags as showing a
+    minor or a real person are never used.
     """
-    imgs = [i for i in images or [] if i.get("type", "image") == "image" and i.get("url")]
+    usable = [i for i in images or [] if i.get("url") and not i.get("minor") and not i.get("poi")]
+    imgs = [i for i in usable if i.get("type", "image") == "image"]
+    if not imgs:
+        imgs = [dict(i, url=_still(i["url"])) for i in usable if i.get("type") == "video"]
     if not imgs:
         return "", False
     level = lambda i: i.get("nsfwLevel") or 1
@@ -303,7 +317,8 @@ def resolve(url, settings):
 
 
 def library_item(candidate, overrides=None):
-    """Build a schema-v2 library document from a resolved candidate."""
+    """Build a library document (schema v3, see schema.library) from a resolved candidate."""
+    from . import schema
     o = overrides or {}
     item = {
         "id": new_id(),
@@ -318,14 +333,18 @@ def library_item(candidate, overrides=None):
         "preview_mature": bool(candidate.get("preview_mature")),
         "trigger_words": candidate.get("trigger_words") or [],
         "base_model": candidate.get("base_model") or "",
+        "type": candidate.get("model_type") or candidate.get("type") or "",
+        "nsfw": bool(candidate.get("nsfw")),
+        "tags": list(o.get("tags") or []),
         "page_url": candidate.get("page_url") or "",
         "bundle_ids": list(o.get("bundle_ids") or []),
         "auto_install": bool(o.get("auto_install")),
         "notes": o.get("notes") or "",
+        "origin": o.get("origin") or "manual",
         "created_at": now(),
         "updated_at": now(),
     }
     for key in ("civitai", "hf"):
         if candidate.get(key):
             item[key] = candidate[key]
-    return item
+    return schema.library(item)

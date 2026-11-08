@@ -1,0 +1,449 @@
+{
+ "workflow": "anima-inpaint",
+ "graph_sha256": "1c18faaeeb8314c3a630de2dfb486eb7feaf0fb3b3511f84570b64d1e59e4ad7",
+ "frontend": "1.58.5",
+ "prompt": {
+  "46": {
+   "inputs": {
+    "filename_prefix": "Anima",
+    "images": [
+     "88:105",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.1"
+   }
+  },
+  "77": {
+   "inputs": {
+    "compare_view": {
+     "__value__": {
+      "0": "",
+      "1": ""
+     }
+    },
+    "image_a": [
+     "91",
+     0
+    ],
+    "image_b": [
+     "46",
+     0
+    ]
+   },
+   "class_type": "ImageCompare",
+   "_meta": {
+    "title": "Compare Images"
+   }
+  },
+  "91": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Load Image"
+   }
+  },
+  "694": {
+   "inputs": {
+    "mask": "painter/painter-694-1784648658071.png [temp]",
+    "width": 1024,
+    "height": 1024,
+    "bg_color": "#000000",
+    "image": [
+     "91",
+     0
+    ]
+   },
+   "class_type": "Painter",
+   "_meta": {
+    "title": "Painter"
+   }
+  },
+  "695": {
+   "inputs": {
+    "mask": [
+     "694",
+     1
+    ]
+   },
+   "class_type": "MaskPreview",
+   "_meta": {
+    "title": "Preview Mask"
+   }
+  },
+  "696": {
+   "inputs": {
+    "resize_type": "scale total pixels",
+    "resize_type.megapixels": 1,
+    "scale_method": "lanczos"
+   },
+   "class_type": "ResizeImageMaskNode",
+   "_meta": {
+    "title": "Resize Image/Mask"
+   }
+  },
+  "88:78": {
+   "inputs": {
+    "clip_name": "qwen_3_06b_base.safetensors",
+    "type": "stable_diffusion",
+    "device": "default"
+   },
+   "class_type": "CLIPLoader",
+   "_meta": {
+    "title": "Load CLIP",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.0"
+   }
+  },
+  "88:79": {
+   "inputs": {
+    "vae_name": "qwen_image_vae.safetensors"
+   },
+   "class_type": "VAELoader",
+   "_meta": {
+    "title": "Load VAE",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "88:81": {
+   "inputs": {
+    "width": 1024,
+    "height": 1024,
+    "batch_size": 1
+   },
+   "class_type": "EmptyLatentImage",
+   "_meta": {
+    "title": "Empty Latent Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "88:82": {
+   "inputs": {
+    "text": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, sepia",
+    "clip": [
+     "88:78",
+     0
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "CLIP Text Encode (Negative Prompt)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.65"
+   }
+  },
+  "88:84": {
+   "inputs": {
+    "text": "1woman, mature female, red eyes, detailed eyes, light smile, looking at viewer",
+    "clip": [
+     "88:78",
+     0
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "CLIP Text Encode (Positive Prompt)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.65"
+   }
+  },
+  "88:85": {
+   "inputs": {
+    "unet_name": "anima-base-v1.0.safetensors",
+    "weight_dtype": "default"
+   },
+   "class_type": "UNETLoader",
+   "_meta": {
+    "title": "Load Diffusion Model",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.0"
+   }
+  },
+  "88:86": {
+   "inputs": {
+    "name": "anima-lllite-inpainting-v2.safetensors"
+   },
+   "class_type": "ModelPatchLoader",
+   "_meta": {
+    "title": "Load Model Patch"
+   }
+  },
+  "88:87": {
+   "inputs": {
+    "strength": 1,
+    "start_percent": 0,
+    "end_percent": 1,
+    "model": [
+     "88:85",
+     0
+    ],
+    "model_patch": [
+     "88:86",
+     0
+    ],
+    "image": [
+     "694",
+     0
+    ],
+    "mask": [
+     "695",
+     0
+    ]
+   },
+   "class_type": "AnimaLLLiteApply",
+   "_meta": {
+    "title": "Apply Anima LLLite"
+   }
+  },
+  "88:105": {
+   "inputs": {
+    "samples": [
+     "88:106",
+     0
+    ],
+    "vae": [
+     "88:79",
+     0
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "88:106": {
+   "inputs": {
+    "seed": 1376514088921,
+    "steps": [
+     "88:111",
+     0
+    ],
+    "cfg": [
+     "88:113",
+     0
+    ],
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1,
+    "model": [
+     "88:110",
+     0
+    ],
+    "positive": [
+     "88:84",
+     0
+    ],
+    "negative": [
+     "88:82",
+     0
+    ],
+    "latent_image": [
+     "88:81",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "KSampler",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "88:107": {
+   "inputs": {
+    "value": 30
+   },
+   "class_type": "PrimitiveInt",
+   "_meta": {
+    "title": "Int (Steps)"
+   }
+  },
+  "88:108": {
+   "inputs": {
+    "value": 8
+   },
+   "class_type": "PrimitiveInt",
+   "_meta": {
+    "title": "Int (Steps)"
+   }
+  },
+  "88:109": {
+   "inputs": {
+    "lora_name": "anima-turbo-lora-v0.2.safetensors",
+    "strength_model": 1,
+    "model": [
+     "88:87",
+     0
+    ]
+   },
+   "class_type": "LoraLoaderModelOnly",
+   "_meta": {
+    "title": "Load LoRA"
+   }
+  },
+  "88:110": {
+   "inputs": {
+    "switch": [
+     "88:115",
+     0
+    ],
+    "on_false": [
+     "88:87",
+     0
+    ],
+    "on_true": [
+     "88:109",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "88:111": {
+   "inputs": {
+    "switch": [
+     "88:115",
+     0
+    ],
+    "on_false": [
+     "88:107",
+     0
+    ],
+    "on_true": [
+     "88:108",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "88:112": {
+   "inputs": {
+    "value": 4
+   },
+   "class_type": "PrimitiveFloat",
+   "_meta": {
+    "title": "Float (CFG)"
+   }
+  },
+  "88:113": {
+   "inputs": {
+    "switch": [
+     "88:115",
+     0
+    ],
+    "on_false": [
+     "88:112",
+     0
+    ],
+    "on_true": [
+     "88:114",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "88:114": {
+   "inputs": {
+    "value": 1
+   },
+   "class_type": "PrimitiveFloat",
+   "_meta": {
+    "title": "Float (CFG)"
+   }
+  },
+  "88:115": {
+   "inputs": {
+    "value": true
+   },
+   "class_type": "PrimitiveBoolean",
+   "_meta": {
+    "title": "Boolean (Enable Turbo LoRA)"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "88:84",
+   "input": "text",
+   "label": "positive_prompt"
+  },
+  {
+   "node": "88:82",
+   "input": "text",
+   "label": "negative_prompt"
+  },
+  {
+   "node": "88:81",
+   "input": "width",
+   "label": "width"
+  },
+  {
+   "node": "88:81",
+   "input": "height",
+   "label": "height"
+  },
+  {
+   "node": "88:85",
+   "input": "unet_name",
+   "label": "unet_name"
+  },
+  {
+   "node": "88:78",
+   "input": "clip_name",
+   "label": "clip_name"
+  },
+  {
+   "node": "88:79",
+   "input": "vae_name",
+   "label": "vae_name"
+  },
+  {
+   "node": "88:86",
+   "input": "name",
+   "label": "anima_lllite_model"
+  },
+  {
+   "node": "88:87",
+   "input": "strength",
+   "label": "control_strength"
+  },
+  {
+   "node": "88:87",
+   "input": "start_percent",
+   "label": "start_percent"
+  },
+  {
+   "node": "88:87",
+   "input": "end_percent",
+   "label": "end_percent"
+  },
+  {
+   "node": "88:115",
+   "input": "value",
+   "label": "turbo_mode"
+  },
+  {
+   "node": "88:109",
+   "input": "lora_name",
+   "label": "turbo_lora"
+  }
+ ]
+}

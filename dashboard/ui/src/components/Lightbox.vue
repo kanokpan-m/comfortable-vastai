@@ -17,6 +17,7 @@ const open = computed({ get: () => index.value >= 0, set: (v) => { if (!v) index
 const it = computed(() => props.items[index.value])
 const meta = ref(null)
 const showInfo = ref(true)
+const unreadable = ref('')   // path of a file the browser couldn't display
 const confirmOpen = ref(false)
 
 watch(it, async (cur) => {
@@ -49,9 +50,13 @@ async function del() {
       <DialogContent class="fixed inset-0 z-50 flex flex-col focus:outline-none lg:flex-row" aria-describedby="">
         <div class="relative flex min-h-0 flex-1 items-center justify-center p-2 sm:p-6" @click.self="open = false">
           <template v-if="it">
-            <video v-if="it.kind === 'video'" :key="it.path" :src="file" controls autoplay loop class="max-h-full max-w-full rounded" />
+            <p v-if="unreadable === it.path" class="max-w-sm text-center text-sm text-white/80">
+              This file can't be shown here (it may still be being written, or the format isn't supported by the browser).
+              <a :href="file" :download="it.name" class="underline hover:text-white">Download it</a> to open it elsewhere.
+            </p>
+            <video v-else-if="it.kind === 'video'" :key="it.path" :src="file" controls autoplay loop class="max-h-full max-w-full rounded" @error="unreadable = it.path" />
             <audio v-else-if="it.kind === 'audio'" :src="file" controls />
-            <img v-else :key="it.path" :src="file" :alt="it.name" class="max-h-full max-w-full rounded object-contain" />
+            <img v-else :key="it.path" :src="file" :alt="it.name" class="max-h-full max-w-full rounded object-contain" @error="unreadable = it.path" />
           </template>
           <button v-if="index > 0" class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70" aria-label="Previous" @click="step(-1)"><ChevronLeft class="size-5" /></button>
           <button v-if="index < items.length - 1" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70" aria-label="Next" @click="step(1)"><ChevronRight class="size-5" /></button>

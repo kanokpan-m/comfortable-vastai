@@ -46,6 +46,10 @@ LOADERS = {
     "WanVideoModelLoader": "diffusion_models", "WanVideoVAELoader": "vae",
     "WanVideoTextEncodeCached": "text_encoders", "LoadWanVideoT5TextEncoder": "text_encoders",
     "WanVideoLoraSelect": "loras",
+    # Impact Pack / Subpack detectors (bbox/... and segm/... under models/ultralytics) and SAM.
+    "UltralyticsDetectorProvider": "ultralytics", "SAMLoader": "sams",
+    "IPAdapterModelLoader": "ipadapter", "UnetLoaderGGUFDisTorchMultiGPU": "diffusion_models",
+    "LoadDA3Model": "geometry_estimation",
 }
 EMBEDDING_RE = re.compile(r"embedding:([\w.\-\\/ ]+?)(?=[\s,:)(]|$)")
 OFF_MODES = (2, 4)  # muted, bypassed

@@ -18,6 +18,7 @@ import Modal from '../components/ui/Modal.vue'
 import TextInput from '../components/ui/TextInput.vue'
 import AddModelDialog from '../components/AddModelDialog.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import ModelThumb from '../components/ModelThumb.vue'
 
 const app = useApp()
 const plan = ref(null)
@@ -318,7 +319,7 @@ const addOpen = ref(false)
                 <p class="mb-1 text-[11px] text-fg2">{{ m.note || 'No file with this name. Models on Civitai that look like it' }}:</p>
                 <ul class="space-y-1">
                   <li v-for="s in m.possible" :key="s.version_id || s.url" class="flex items-center gap-2 rounded-md bg-surface px-2 py-1.5">
-                    <img v-if="s.preview" :src="s.preview" alt="" class="size-8 shrink-0 rounded object-cover" :class="s.preview_mature && !app.settings?.show_nsfw && 'blur-sm'" loading="lazy" @error="$event.target.style.display = 'none'" />
+                    <ModelThumb :src="s.preview" :mature="s.preview_mature" :category="s.category || m.category" :item="s" :alt="s.name" play="never" :width="96" small class="size-8 shrink-0 rounded" />
                     <div class="min-w-0 flex-1">
                       <a :href="s.page_url" target="_blank" rel="noopener" class="block truncate text-xs hover:underline" :title="s.name">{{ s.name }}</a>
                       <p class="truncate text-[11px] text-muted">

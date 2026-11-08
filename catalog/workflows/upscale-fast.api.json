@@ -1,0 +1,55 @@
+{
+ "workflow": "upscale-fast",
+ "graph_sha256": "39a688dcbfcd8b2736ae588cf4c33ee47ca848c6e0de072be1836083fe4d2dc2",
+ "frontend": "1.58.5",
+ "prompt": {
+  "2": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Image to upscale"
+   }
+  },
+  "3": {
+   "inputs": {
+    "model_name": "4x-UltraSharpV2.safetensors"
+   },
+   "class_type": "UpscaleModelLoader",
+   "_meta": {
+    "title": "Load Upscale Model"
+   }
+  },
+  "4": {
+   "inputs": {
+    "upscale_model": [
+     "3",
+     0
+    ],
+    "image": [
+     "2",
+     0
+    ]
+   },
+   "class_type": "ImageUpscaleWithModel",
+   "_meta": {
+    "title": "Upscale Image (using Model)"
+   }
+  },
+  "5": {
+   "inputs": {
+    "filename_prefix": "upscaled/4x",
+    "images": [
+     "4",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image"
+   }
+  }
+ },
+ "controls": []
+}

@@ -8,6 +8,8 @@ async function request(method, path, body) {
   const text = await res.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
+  // Through a hub whose sign-in ran out: show the PIN screen.
+  if (res.status === 401 && data?.signin) window.dispatchEvent(new Event('comfortable:signin'))
   if (!res.ok) throw new Error((data && data.error) || `${res.status} ${res.statusText}`)
   return data
 }

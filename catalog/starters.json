@@ -1,0 +1,784 @@
+[
+ {
+  "id": "krea2-nsfw",
+  "base": "image_krea2_turbo_t2i",
+  "swap": {
+   "krea2_turbo_fp8_scaled.safetensors": {
+    "name": "lustifyNSFWCheckpoint_v10Krea2_2997637.safetensors",
+    "url": "https://civitai.com/api/download/models/3112728?fileId=2997637",
+    "directory": "diffusion_models"
+   },
+   "krea2_darkbrush.safetensors": {
+    "name": "snofs_krea_v1_6.safetensors",
+    "url": "https://civitai.com/api/download/models/3446779",
+    "directory": "loras"
+   }
+  },
+  "set": {
+   "value": "Amateur smartphone photo of a nude adult woman in her late twenties lying on rumpled white bed sheets, morning window light, natural skin texture with freckles, relaxed smile, shallow depth of field, candid and intimate.",
+   "value_1": false,
+   "value_3": true,
+   "strength_model_1": 0.8,
+   "string_b_1": ""
+  },
+  "nodes": {},
+  "note": "## Krea 2 NSFW photo (LUSTIFY v10 + SNOFS)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write what you want in the prompt box (natural language works best; SNOFS knows positions like cowgirl, doggystyle, missionary).\n2. Pick an aspect ratio in the Resolution selector (2 MP for more detail).\n3. Press Run. Lower the LoRA strength (0.5-0.7) if bodies look overcooked; turn the LoRA off for solo nudes.\n\n**Models:** LUSTIFY! v10 (Krea 2), SNOFS v1.6 (Krea 2 LoRA)\n"
+ },
+ {
+  "id": "dasiwa-h3-i2v",
+  "base": "video_minimax_h3_i2v",
+  "swap": {
+   "minimax_h3_fl2va_pruned_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/dasiwa_minimax_h3_ref2va_v4_pruned_turbo_int8.safetensors",
+    "url": "https://civitai.com/api/download/models/3392061?fileId=3281858",
+    "directory": "diffusion_models"
+   },
+   "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors": {
+    "name": "HMNSFW-Extreme-Realism.safetensors",
+    "url": "https://civitai.com/api/download/models/3446189",
+    "directory": "loras"
+   },
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "prompt": "The woman from <Picture 1> looks into the camera, smiles and slowly slides the strap of her dress off her shoulder, then lets the dress fall to the floor and laughs softly. Warm bedroom light, handheld camera, intimate atmosphere. Audio: soft laughter and quiet room tone.",
+   "value": true,
+   "strength_model_1": 0.8,
+   "value_2": 4
+  },
+  "nodes": {
+   "17": {
+    "widgets": {
+     "0": "euler"
+    }
+   },
+   "114": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## DaSiWa MiniMax H3: NSFW image to video with sound\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load your start image (a clean, sharp photo; it becomes <Picture 1>).\n2. Describe the motion and the sound in the prompt.\n3. Set the duration (5 s = 124 frames; up to 15 s) and press Run. For a different look swap HMNSFW for another H3 LoRA at 0.6-1.0.\n\n**Models:** DaSiWa MiniMax H3 Hybrid v4 Turbo, HMNSFW AIO sex LoRA V3 (H3)\n"
+ },
+ {
+  "id": "dasiwa-wan22-i2v",
+  "base": "video_wan2_2_14B_i2v",
+  "swap": {
+   "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors": {
+    "name": "WAN22/DaSiWa_Wan22_I2V_14B_SnatchKiss_v11_HIGH_fp8.safetensors",
+    "url": "https://civitai.com/api/download/models/2953474?fileId=2837908",
+    "directory": "diffusion_models"
+   },
+   "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors": {
+    "name": "WAN22/DaSiWa_Wan22_I2V_14B_SnatchKiss_v11_LOW_fp8.safetensors",
+    "url": "https://civitai.com/api/download/models/2953485?fileId=2837910",
+    "directory": "diffusion_models"
+   },
+   "wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors": {
+    "name": "NSFW-22-H-e8.safetensors",
+    "url": "https://civitai.com/api/download/models/2073605",
+    "directory": "loras"
+   },
+   "wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise.safetensors": {
+    "name": "NSFW-22-L-e8.safetensors",
+    "url": "https://civitai.com/api/download/models/2083303",
+    "directory": "loras"
+   },
+   "wan_2.1_vae.safetensors": {
+    "name": "Wan/wan_2.1_vae.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/Wan-2.2/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "text": "The woman slowly arches her back and runs her hands over her bare breasts, looking at the camera with a playful smile; her hair moves gently; steady camera, soft natural light.",
+   "value": true,
+   "width": 576,
+   "height": 1024
+  },
+  "nodes": {
+   "101": {
+    "widgets": {
+     "1": 0.4
+    }
+   },
+   "102": {
+    "widgets": {
+     "1": 0.4
+    }
+   },
+   "97": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## DaSiWa WAN 2.2: NSFW image to video\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load your start image and match Width/Height to its aspect ratio (about 0.5-0.8 megapixels, e.g. 576x1024).\n2. Describe the motion in the prompt; at CFG 1 the negative prompt is ignored.\n3. Press Run (81 frames = 5 s at 16 fps). Don't add speed LoRAs: the speed is baked in. Swap the LoRA pair for another Wan concept pair (0.3-0.6).\n\n**Models:** DaSiWa WAN 2.2 I2V SnatchKiss v11 Lightspeed, WAN General NSFW (Wan 2.2)\n"
+ },
+ {
+  "id": "moss-nsfw",
+  "base": "image_moss_image_t2i",
+  "swap": {},
+  "set": {
+   "value": "Photorealistic boudoir photograph of a topless adult woman sitting on the edge of a velvet armchair, black lace stockings, warm tungsten light, film grain, editorial composition.",
+   "switch": false,
+   "text": "worst quality, bad anatomy, watermark, jpeg artifact"
+  },
+  "nodes": {},
+  "note": "## MOSS-Image: uncensored photo and anime\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write the prompt (photo or anime both work; natural language).\n2. Keep the prompt enhancer off for adult prompts (it rewrites them).\n3. Press Run (25 steps). Add the MOSS turbo LoRA for 4 steps.\n\n**Models:** MOSS-Image SFT\n"
+ },
+ {
+  "id": "zimage-nsfw",
+  "base": "image_z_image_turbo",
+  "swap": {
+   "z_image_turbo_bf16.safetensors": {
+    "name": "PornMaster z-image Turbo V3.5_fp8.safetensors",
+    "url": "https://civitai.com/api/download/models/2836226",
+    "directory": "diffusion_models"
+   }
+  },
+  "set": {},
+  "nodes": {
+   "27": {
+    "widgets": {
+     "0": "Photo of a naked adult woman with long dark hair standing in a sunlit bathroom, steam on the mirror, wet skin, natural body, realistic, 35mm film look."
+    }
+   },
+   "3": {
+    "widgets": {
+     "4": "euler"
+    }
+   }
+  },
+  "note": "## Z-Image NSFW photo (PornMaster Turbo)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write the prompt in the Positive Prompt box.\n2. Press Run. Add one Z-Image NSFW LoRA with a LoRA loader for specific acts.\n\n**Models:** PornMaster Turbo V3.5 (Z-Image)\n"
+ },
+ {
+  "id": "krea2-t2i",
+  "base": "image_krea2_turbo_t2i",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## Krea 2 Turbo text to image\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write a detailed prompt (the enhancer can expand short ones).\n2. Pick the aspect ratio and press Run.\n3. Flip 'Enable LoRA' for Krea's ink-wash style, or load any Krea 2 LoRA there.\n\n**Models:** Krea 2 Turbo, Krea darkbrush style (official Krea 2 LoRA)\n"
+ },
+ {
+  "id": "krea2-style-reference",
+  "base": "image_krea2_turbo_int8_image_style_reference",
+  "swap": {
+   "krea2_turbo_int8_convrot.safetensors": {
+    "name": "krea2_turbo_fp8_scaled.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors",
+    "directory": "diffusion_models"
+   }
+  },
+  "set": {},
+  "nodes": {
+   "69": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Krea 2 style change from a reference image\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the style reference image (paintings, photos, renders; 1-3 images).\n2. Describe the new subject in the prompt; the style comes from the image.\n3. Press Run.\n\n**Models:** Krea 2 Turbo, Krea 2 style reference LoRA\n"
+ },
+ {
+  "id": "qwen21-edit",
+  "base": "image_qwen_image_2_1_turbo_image_edit",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "470": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Qwen-Image 2.1 edit: outfit, pose, background, style\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the image to edit (it sets the canvas); add more images for references (<image2>, <image3>...).\n2. Describe the change, e.g. 'Make the woman in <image1> take the pose of the person in <image2>'.\n3. Press Run (8 steps). For explicit edits add a Qwen 2.1 NSFW LoRA.\n\n**Models:** Qwen-Image 2.1 Turbo (edit + generate)\n"
+ },
+ {
+  "id": "zimage-controlnet",
+  "base": "image_z_image_turbo_fun_union_controlnet",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "58": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Z-Image ControlNet: pose, depth or edges\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the control image.\n2. Write the prompt for the new picture and press Run.\n3. For pose: replace the Canny node with SDPose's skeleton (install the SDPose pack) and keep strength around 0.8.\n\n**Models:** Z-Image Turbo, Z-Image Turbo Fun ControlNet Union\n"
+ },
+ {
+  "id": "zimage-t2i",
+  "base": "image_z_image_turbo",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## Z-Image Turbo text to image\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write the prompt and press Run.\n\n**Models:** Z-Image Turbo\n"
+ },
+ {
+  "id": "anima-t2i",
+  "base": "image_anima_base_v1",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## Anima anime text to image\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write tags or a sentence (score and quality tags go in the negative).\n2. Flip the turbo switch for 8 steps at CFG 1.\n3. Press Run.\n\n**Models:** Anima Base v1.0\n"
+ },
+ {
+  "id": "h3-i2v",
+  "base": "video_minimax_h3_i2v",
+  "swap": {
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {},
+  "nodes": {
+   "114": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## MiniMax H3 image to video with sound\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the start image.\n2. Describe the motion and the audio.\n3. Enable the Lightning LoRA for 8 steps, then press Run.\n\n**Models:** MiniMax H3 image/text to video (+audio)\n"
+ },
+ {
+  "id": "h3-pose-video",
+  "base": "video_minimax_h3_fun_controlnet_union",
+  "swap": {
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {},
+  "nodes": {},
+  "note": "## MiniMax H3 pose transfer from a video\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the driving video (the moves) and describe the character and scene.\n2. Check the pose preview, then press Run.\n\n**Models:** MiniMax H3 reference to video (+audio), MiniMax H3 Fun ControlNet Union, SDPose whole-body pose extractor\n"
+ },
+ {
+  "id": "wan-animate",
+  "base": "video_wan_animate2_distilled",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "189": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Wan Animate 2: character swap / motion transfer\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the reference image (the character) and the driving video (the moves).\n2. Describe the character and the action, then press Run.\n\n**Models:** Wan Animate 2 (character swap / motion transfer)\n"
+ },
+ {
+  "id": "seedvr2-image",
+  "base": "utility_seedvr2_7b_int8_upscale_image",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "1": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## SeedVR2 image upscale\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the image.\n2. Set the target size in the resize node (2x is a good start) and press Run.\n\n**Models:** SeedVR2 7B image upscaler\n"
+ },
+ {
+  "id": "seedvr2-video",
+  "base": "utility_seedvr2_3b_int8_upscale_video",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## SeedVR2 video upscale\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the video.\n2. Press Run (split the latent for long clips on small GPUs).\n\n**Models:** SeedVR2 3B video upscaler\n"
+ },
+ {
+  "id": "interpolate",
+  "base": "utility_video_frame_interpolation",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## Frame interpolation (smoother video)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the video.\n2. Set the multiplier (2 is typical) and press Run.\n\n**Models:** Frame interpolation (RIFE 4.26 + FILM)\n"
+ },
+ {
+  "id": "h3-t2v",
+  "base": "video_minimax_h3_t2v",
+  "swap": {
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "prompt": "Cinematic handheld shot at blue hour: a street musician plays a saxophone on a rain-slick city corner while people pass with umbrellas; neon signs reflect in the puddles and the camera slowly circles him. Audio: a smooth saxophone melody, light rain on umbrellas, distant traffic.",
+   "value": true
+  },
+  "nodes": {},
+  "note": "## MiniMax H3 text to video with sound\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Describe the shot, what happens over time and the sound (put spoken lines in quotes).\n2. Set the aspect ratio and the duration (5 s = 124 frames; up to 15 s).\n3. Press Run. Turbo mode (8 steps) is on; turn it off for the slower 20-step pass.\n\n**Models:** MiniMax H3 FL2VA (int8), lightx2v 8-step turbo LoRA\n"
+ },
+ {
+  "id": "dasiwa-h3-t2v",
+  "base": "video_minimax_h3_t2v",
+  "swap": {
+   "minimax_h3_fl2va_pruned_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/dasiwa_minimax_h3_ref2va_v4_pruned_turbo_int8.safetensors",
+    "url": "https://civitai.com/api/download/models/3392061?fileId=3281858",
+    "directory": "diffusion_models"
+   },
+   "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors": {
+    "name": "HMNSFW-Extreme-Realism.safetensors",
+    "url": "https://civitai.com/api/download/models/3446189",
+    "directory": "loras"
+   },
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "prompt": "A confident woman in her thirties lies on a hotel bed in warm lamplight, slowly unbuttons her silk shirt while smiling at the camera, lets it slip off her shoulders to bare her breasts and laughs softly. Slow push-in, shallow depth of field, intimate atmosphere. Audio: soft laughter, rustling silk, quiet room tone.",
+   "value": true,
+   "strength_model_1": 0.8,
+   "value_2": 4
+  },
+  "nodes": {
+   "123": {
+    "widgets": {
+     "0": "euler"
+    }
+   }
+  },
+  "note": "## DaSiWa MiniMax H3: NSFW text to video with sound\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Describe the people (adults), what happens over time and the sound.\n2. Set the aspect ratio and the duration (5 s = 124 frames; up to 15 s).\n3. Press Run. Keep 4 steps and euler: the turbo is baked in, never add turbo LoRAs. Swap HMNSFW for another H3 LoRA at 0.6-1.0.\n\n**Models:** DaSiWa MiniMax H3 Hybrid v4 Turbo, HMNSFW AIO sex LoRA V3 (H3)\n"
+ },
+ {
+  "id": "h3-flf2v",
+  "base": "video_pika_h3_flex_fl2va",
+  "swap": {
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "prompt": "How the reference pictures align with the target video — Picture 1 aligns with the 0.00-second mark of the target video; Picture 2 aligns with the 5.00-second mark of the target video.\n\nintegrated_multimodal_description: [Shot 1] The shot begins exactly on Picture 1. The camera glides slowly forward while the subject turns, steps and moves naturally toward the pose and framing of Picture 2; light, background and clothing change smoothly along the way, with no cuts. The shot settles exactly into the final composition of Picture 2 and holds.\n\noverall_soundscape: Footsteps, rustling fabric and soft room tone that follow the movement.\n\nnon_diegetic_music: A light, warm piano line that resolves on the final frame."
+  },
+  "nodes": {
+   "147": {
+    "widgets": {
+     "0": "example.png"
+    }
+   },
+   "148": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## MiniMax H3 first & last frame to video (Pika H3 Flex)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the first frame (Picture 1) and the last frame (Picture 2); use the same aspect ratio for both.\n2. Edit the prompt: what happens between the two pictures, then the soundscape and music. Keep the timing line at the top in sync with the duration.\n3. Press Run (6 steps, lcm).\n\n**Models:** MiniMax H3 FL2VA (int8), Pika H3 Flex FL2VA LoRA\n"
+ },
+ {
+  "id": "ltx23-i2v",
+  "base": "video_ltx2_3_i2v",
+  "swap": {},
+  "set": {
+   "value": "The picture comes to life: the person breathes, blinks and turns slightly toward the camera with a relaxed smile while a gentle breeze moves their hair and clothes. Slow push-in, soft natural light, shallow depth of field. Audio: a light breeze and quiet ambient room tone."
+  },
+  "nodes": {
+   "269": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## LTX-2.3 image to video with sound\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the start image (portrait or landscape).\n2. Describe what happens over time, the visual details and the sound or dialogue.\n3. Set width, height and duration (5 s at 25 fps) and press Run. Turn on the prompt enhancer for short prompts.\n\n**Models:** LTX-2.3 22B dev (fp8), distilled LoRA, x2 spatial upscaler, Gemma 3 12B\n"
+ },
+ {
+  "id": "ltx23-lipsync",
+  "base": "video_ltx2_3_ia2v",
+  "swap": {},
+  "set": {
+   "value": "The person in the picture talks straight to the camera with natural lip movement matching the voice, small head movements, expressive eyebrows and an occasional hand gesture. Static medium close-up, soft key light, calm background."
+  },
+  "nodes": {
+   "269": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## LTX-2.3 lip sync: talking or singing from a picture + audio\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the picture (a clear face) and the audio file (voice or song).\n2. Describe the person and how they move while speaking or singing.\n3. Set audio_start and duration (seconds of audio to use), then press Run. Make a song first with the MiniMax Music 3 starter if you need one.\n\n**Models:** LTX-2.3 22B dev (fp8), distilled LoRA, x2 spatial upscaler, Gemma 3 12B\n"
+ },
+ {
+  "id": "anima-inpaint",
+  "base": "image_anima_lllite_image_inpainting",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "91": {
+    "widgets": {
+     "0": "example.png"
+    }
+   },
+   "84": {
+    "widgets": {
+     "0": "1woman, mature female, red eyes, detailed eyes, light smile, looking at viewer"
+    }
+   }
+  },
+  "note": "## Anima anime inpainting\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the picture to fix.\n2. In the Painter node, paint white over what should be redrawn (black = keep).\n3. Describe what should be there (tags or a sentence) and press Run. Turbo (8 steps, CFG 1) is on; turn it off for 30 steps.\n\n**Models:** Anima Base v1.0, Anima LLLite inpainting v2, Anima turbo LoRA\n"
+ },
+ {
+  "id": "anima-lineart",
+  "base": "image_anima_lllite_any_control_to_image",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "91": {
+    "widgets": {
+     "0": "example.png"
+    }
+   },
+   "84": {
+    "widgets": {
+     "0": "1woman, mature female, bust portrait, sleek cybernetic armor, glowing blue accents, clean lineart, cel shading, vibrant colors, simple background, masterpiece, best quality"
+    }
+   }
+  },
+  "note": "## Anima line art / sketch to finished anime art\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load a sketch, line art or any picture (its canny edges guide the drawing; check the edge preview).\n2. Describe the character, colours and style (tags or a sentence).\n3. Press Run. Turn on turbo for 8 steps; lower the LLLite strength if it copies the lines too stiffly.\n\n**Models:** Anima Base v1.0, Anima LLLite any-control v2\n"
+ },
+ {
+  "id": "moss-edit",
+  "base": "image_moss_image_edit",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "8": {
+    "widgets": {
+     "0": "example.png"
+    }
+   },
+   "39": {
+    "widgets": {
+     "0": "Change only the background to a sunny beach at golden hour. Keep the person, face, hair, pose, clothing and framing exactly the same."
+    }
+   }
+  },
+  "note": "## MOSS-Image edit by instruction\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the photo to edit.\n2. Write the change as one instruction and say what must stay the same.\n3. Press Run (30 steps, CFG 4). Compare before and after in the slider.\n\n**Models:** MOSS-Image SFT (int8), MOSS-Image edit LoRA\n"
+ },
+ {
+  "id": "character-angles",
+  "base": "template_qwen_multiangle.app",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "1": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## New camera angles of a character or scene (Qwen Edit 2511)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the picture of the character or scene.\n2. Set the camera in the 3D camera node: drag it around the preview, or type azimuth (orbit), elevation and distance.\n3. Press Run (4-step Lightning). Run again with other angles for a character sheet or turnaround.\n\n**Models:** Qwen-Image-Edit 2511 (int8), Lightning 4-step LoRA, Multiple Angles LoRA (fal)\n"
+ },
+ {
+  "id": "moss-layout",
+  "base": "image_moss_image_t2i_bboxes",
+  "swap": {
+   "moss_image_sft_int8_convrot.safetensors": {
+    "name": "moss_image_sft_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_int8_convrot.safetensors",
+    "directory": "diffusion_models"
+   }
+  },
+  "set": {},
+  "nodes": {},
+  "note": "## MOSS-Image layout: place things with boxes\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write the overall scene in the layout prompt.\n2. In Create Bounding Boxes draw one box per element and caption it; a text box prints its text (posters, covers, packaging).\n3. Press Run (25 steps, CFG 2.5).\n\n**Models:** MOSS-Image SFT (int8)\n"
+ },
+ {
+  "id": "remove-background",
+  "base": "utility_birefnet_remove_background",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "17": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Remove the background (BiRefNet)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the picture.\n2. Press Run.\n3. Right-click the result and choose Save Image (the PNG keeps the transparency); the mask preview shows what was kept.\n\n**Models:** BiRefNet\n"
+ },
+ {
+  "id": "prompt-from-image",
+  "base": "llm_qwen3vl_text_gen",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "10": {
+    "widgets": {
+     "0": "Describe this image as one detailed paragraph that works as a prompt for an image or video model: the subject and their appearance, clothing, pose and expression, the setting, lighting, camera angle and lens, and the art or photo style. No lists, no preamble.",
+     "10": false,
+     "11": true,
+     "12": "auto",
+     "13": ""
+    }
+   }
+  },
+  "note": "## Image to prompt (Qwen3-VL)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the picture.\n2. Edit the instruction if you want something else (tags for anime models, a motion idea for video, a shorter caption).\n3. Press Run and copy the text from the preview.\n\n**Models:** Qwen3-VL 4B (fp8; the same file as Krea 2's text encoder)\n"
+ },
+ {
+  "id": "image-to-3d",
+  "base": "3d_pixal3d_trellis2_image_to_model",
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "122": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "note": "## Image to 3D model (Pixal3D / TRELLIS.2)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load a picture of a single object or character (front view, plain background works best).\n2. Choose the pipeline with the switch: Pixal3D (geometry aligned to the picture) or TRELLIS.2.\n3. Press Run. The textured model is saved as GLB in output/3d and shown in the 3D preview.\n\n**Models:** Pixal3D, TRELLIS.2 (int8), DINOv3, MoGe 2, BiRefNet\n"
+ },
+ {
+  "id": "text-to-music",
+  "base": "audio_minimax_music_3",
+  "swap": {},
+  "set": {},
+  "nodes": {},
+  "note": "## Text to music with vocals (MiniMax Music 3)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write the caption: genre, BPM, key, mood, instruments and the kind of voice.\n2. Write the lyrics with section tags ([Intro], [Verse], [Chorus], [Bridge], [Outro]).\n3. Set max_duration (seconds) and press Run. The song is saved as MP3 in output/audio.\n\n**Models:** MiniMax Music 3 (DiT, text encoder int8, audio VAE)\n"
+ },
+ {
+  "id": "krea2-art-styles",
+  "base": "image_krea2_turbo_t2i",
+  "thumbnail": false,
+  "swap": {
+   "krea2_darkbrush.safetensors": {
+    "name": "ImpressionismKrea2Raw.safetensors",
+    "url": "https://civitai.com/api/download/models/3219131",
+    "directory": "loras"
+   }
+  },
+  "set": {
+   "value": "A woman in a white summer dress and a straw hat walks through a sunlit field of red poppies above the sea, wind in her hair, a small village and sailboats in the distance, soft afternoon light.",
+   "value_1": false,
+   "value_3": true,
+   "strength_model_1": 1.0,
+   "string_b_1": "ArsMJStyle, impressionism"
+  },
+  "nodes": {},
+  "note": "## Krea 2 painting and drawing styles\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Describe the subject. The LoRA's trigger words are in the 'lora trigger' box (added to the prompt for you).\n2. Press Run (8 steps). The prompt enhancer is off so the style words stay as written.\n3. Other looks: pick another Krea 2 style LoRA in the LoRA box and type its trigger words: Ars Watercolor, Hyperdetailed Colored Pencil, Ink Riot comic, 90s Anime Aesthetic, Dark Art, Claymation, Commodore 64, Dieselpunk, or Krea's own retroanime / vintage tarot / soft watercolor / dot matrix / neon drip.\n\n**Models:** Krea 2 Turbo, Impressionism LoRA (Krea 2)\n"
+ },
+ {
+  "id": "moss-art-styles",
+  "base": "image_moss_image_t2i",
+  "thumbnail": false,
+  "swap": {},
+  "set": {
+   "value": "Vintage 1970s European science-fiction comic panel: a lone explorer in a bubble helmet crosses a desert of giant crystals under two moons, detailed ink line art, flat limited colors, halftone print texture.",
+   "switch": false
+  },
+  "nodes": {},
+  "loras": [
+   {
+    "after": "1",
+    "name": "retro-vintage-comics-moss-image-base-epoch-05.safetensors",
+    "url": "https://civitai.com/api/download/models/3419281",
+    "strength": 1.0,
+    "title": "Style LoRA"
+   }
+  ],
+  "note": "## MOSS-Image art styles (comic, sketch, paint, pixel)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Describe the scene (and the medium: comic panel, pencil sketch, oil painting...).\n2. Press Run (25 steps, CFG 2.5). The prompt enhancer is off so the style words stay as written.\n3. Swap the style LoRA on the main node: Pencil Sketch ('A pencil sketch on textured paper'), Velvet's Dark Lines (D4rkL1nes), Modern Fantasy Paint, Pixel Art Refiner ('pixel art'), 1980s Horror, Hentai Studio Quality (18+).\n\n**Models:** MOSS-Image SFT (int8), Retro Vintage Comics LoRA (MOSS)\n"
+ },
+ {
+  "id": "zimage-art-styles",
+  "base": "image_z_image_turbo",
+  "thumbnail": false,
+  "swap": {},
+  "nodes": {
+   "27": {
+    "widgets": {
+     "0": "zydink, ink style, a lone swordsman in a straw hat stands on a cliff above a misty river gorge, bold black brushstrokes and ink splashes, a single red sun, rice paper texture"
+    }
+   }
+  },
+  "loras": [
+   {
+    "after": "28",
+    "name": "zyd232_InkStyle_Z-Image_v1.2.safetensors",
+    "url": "https://civitai.com/api/download/models/2486884",
+    "strength": 1.0,
+    "title": "Style LoRA"
+   }
+  ],
+  "note": "## Z-Image Turbo art styles (ink wash, comic, anime, 3D)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Describe the scene; keep the style's trigger words at the start (zydink, ink style).\n2. Press Run (8 steps).\n3. Swap the style LoRA on the main node: Comic Book Opus IX ('Bradhamel art style', 0.6), Cyberpunk Anime, 90s Anime Aesthetic, Octane Render, Daubrez Painterly (DBRZ).\n\n**Models:** Z-Image Turbo, zyd232's Ink Wash LoRA (Z-Image)\n"
+ },
+ {
+  "id": "h3-style-t2v",
+  "base": "video_minimax_h3_t2v",
+  "thumbnail": false,
+  "swap": {
+   "minimax_h3_video_vae_int8_convrot.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_video_vae_int8_convrot.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+    "directory": "vae"
+   },
+   "minimax_h3_audio_vae_fp32.safetensors": {
+    "name": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae"
+   }
+  },
+  "set": {
+   "prompt": "ta86_inkriot, graphic cel shading, bold black outlines. A bounty hunter in a long coat walks out of a desert saloon at high noon, spins her revolver and tips her hat as tumbleweeds roll past; dust and heat haze, low camera angle. Audio: spurs jingling, desert wind, a twangy guitar riff.",
+   "value": true
+  },
+  "nodes": {},
+  "loras": [
+   {
+    "after": "127",
+    "name": "H3_ta86_inkriot.safetensors",
+    "url": "https://civitai.com/api/download/models/3365890",
+    "strength": 0.8,
+    "title": "Style LoRA"
+   }
+  ],
+  "note": "## MiniMax H3 video in a comic style (Ink Riot)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Keep 'ta86_inkriot' first, then describe the shot, what happens and the sound.\n2. Press Run (turbo mode, 8 steps).\n3. Swap the style LoRA on the main node: Safari Eyes (safarieyes, 1980s (style), flat color) or 1980s Fantasy Movies.\n\n**Models:** MiniMax H3 FL2VA (int8), lightx2v 8-step turbo LoRA, Ink Riot LoRA (H3)\n"
+ },
+ {
+  "id": "ltx23-nsfw-i2v",
+  "base": "video_ltx2_3_i2v",
+  "swap": {},
+  "set": {
+   "value": "m15510n4ry. The woman from the picture, in her thirties, lies on her back on white hotel sheets while her partner has sex with her in the missionary position; she holds his shoulders, moans softly and smiles. Slow handheld camera, warm lamplight. Audio: soft moans, rustling sheets, quiet room tone."
+  },
+  "nodes": {
+   "269": {
+    "widgets": {
+     "0": "example.png"
+    }
+   }
+  },
+  "loras": [
+   {
+    "after": "316",
+    "name": "DR34ML4Y_LT3X_V3.safetensors",
+    "url": "https://civitai.com/api/download/models/3082662",
+    "strength": 1.0,
+    "clip": false,
+    "title": "NSFW LoRA"
+   }
+  ],
+  "note": "## LTX-2.3: NSFW image to video with sound (DR34ML4Y)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Load the start image (adults only).\n2. Start the prompt with one position keyword: m15510n4ry, c0wg1rl, r3v3rs3_c0wg1rl, d0gg1e, bl0wj0b, d0ubl3_bj. Say the woman is on her back for missionary (it can mix it up with cowgirl). Then describe the motion and the sound.\n3. Press Run (8 + 3 steps). Swap the LoRA on the main node for SexGod Female Nudity (LTXNUDES) or DaSiWa NSFW Body Physics (D4S1W4_NSFWSME, 0.5-1.0).\n\n**Models:** LTX-2.3 22B dev (fp8), distilled LoRA, x2 spatial upscaler, Gemma 3 12B, DR34ML4Y v3 (LTX-2.3)\n"
+ },
+ {
+  "id": "anima-artist-styles",
+  "base": "image_anima_base_v1",
+  "thumbnail": false,
+  "swap": {},
+  "set": {},
+  "nodes": {
+   "77": {
+    "widgets": {
+     "0": "highres, safe, @arthurrackham, watercolor, ink lines, detailed cross hatching, delicate linework, muted color palette, ornate details. This is a detailed pen and ink and watercolor illustration of a knight resting beside a sleeping dragon under a gnarled oak tree in an enchanted forest at dusk."
+    }
+   },
+   "75": {
+    "widgets": {
+     "0": "worst quality, low quality, score_1, score_2, score_3, artist name, signature, watermark, blurry, jpeg artifacts"
+    }
+   }
+  },
+  "loras": [
+   {
+    "after": "78",
+    "name": "Arthur Rackham-000085.safetensors",
+    "url": "https://civitai.com/api/download/models/3004724",
+    "strength": 1.0,
+    "title": "Artist LoRA"
+   }
+  ],
+  "note": "## Anima artist styles (@artist tags or an artist LoRA)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write your subject at the end of the prompt; the Arthur Rackham template before it sets the look.\n2. Press Run (30 steps, CFG 4). Flip turbo for 8 steps at CFG 1 (a little less faithful to the artist).\n3. Any other artist: bypass the Artist LoRA (Ctrl+B) and write @name, e.g. @guweiz, @kagami hirotaka, @urushihara satoshi, @murata yuusuke (list in Suggested > This artist). Keep the @, use one artist, weight like (@guweiz:1.2). Or load another Anima LoRA: Kentaro Miura, Yusuke Murata, Simon Bisley, Dan DeCarlo, J. Scott Campbell, sumi-e, impasto, watercolor, 90s retro, Octopath pixel art.\n\n**Models:** Anima Base v1.0, Arthur Rackham LoRA (Anima)\n"
+ },
+ {
+  "id": "illustrious-artist-styles",
+  "base": "catalog:illustrious-hentai",
+  "swap": {
+   "cutesexyrobutts_style_illustrious_goofy.safetensors": {
+    "name": "oobari_style_illustrious_ver2.safetensors",
+    "url": "https://civitai.com/api/download/models/1797321",
+    "directory": "loras"
+   }
+  },
+  "set": {},
+  "nodes": {
+   "3": {
+    "mode": 0,
+    "title": "Artist LoRA",
+    "widgets": {
+     "1": 0.75,
+     "2": 0.75
+    }
+   },
+   "4": {
+    "widgets": {
+     "0": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, obari_style, retro artstyle, 1girl, solo, mature female, long hair, pilot suit, cockpit, city lights, night, dynamic pose, looking at viewer, confident smile"
+    }
+   },
+   "18": {
+    "widgets": {
+     "0": "illustrious/artist"
+    }
+   }
+  },
+  "loras": [
+   {
+    "after": "3",
+    "name": "Sumi-eIllustrious.safetensors",
+    "url": "https://civitai.com/api/download/models/1515564",
+    "strength": 0.6,
+    "mode": 4,
+    "title": "Style LoRA (Ctrl+B to turn on)"
+   }
+  ],
+  "note": "## Illustrious artist styles (artist LoRA + style slot + artist tags)\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write Danbooru tags in the positive prompt; the artist's trigger words (obari_style, retro artstyle) are already in.\n2. Press Run: base image, 1.5x hires pass through 2x-AnimeSharpV4, then the face detailer.\n3. Make it yours: swap the Artist LoRA for any 'This artist' LoRA (Ayami Kojima, Tsutomu Nihei, Jim Lee, Norman Rockwell, Adam Hughes...), turn on the Style LoRA slot with Ctrl+B (sumi-e ink here; Art Nouveau, Lineart, CPS II pixel art, Marvel Rivals also fit), keep both around 0.6-0.8, and add 1-2 artist tags like (wlop:0.8).\n\n**Models:** WAI-illustrious v17, Masami Obari LoRA, Zen Ink Wash Sumi-e LoRA, 2x-AnimeSharpV4, face detector kit\n"
+ }
+]

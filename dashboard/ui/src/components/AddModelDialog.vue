@@ -105,7 +105,7 @@ async function save(toLibrary) {
 
     <!-- Resolved model -->
     <div v-if="cand" class="mt-4 grid gap-4 sm:grid-cols-[160px_1fr]">
-      <ModelThumb :src="cand.preview" :mature="cand.preview_mature" :category="form.category" class="aspect-[4/5] w-full rounded-lg sm:w-40" />
+      <ModelThumb :src="cand.preview" :mature="cand.preview_mature" :category="form.category" :item="cand" :alt="cand.name" class="aspect-[4/5] w-full rounded-lg sm:w-40" />
       <div class="min-w-0 space-y-3">
         <div class="flex flex-wrap items-center gap-1.5">
           <Tag tone="primary">{{ SOURCE_LABEL[cand.source] || cand.source }}</Tag>

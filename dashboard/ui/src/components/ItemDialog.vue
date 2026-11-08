@@ -10,12 +10,26 @@ import TextInput from './ui/TextInput.vue'
 import Picker from './ui/Picker.vue'
 import Toggle from './ui/Toggle.vue'
 import Tag from './ui/Tag.vue'
-import ModelThumb from './ModelThumb.vue'
+import { Box, Layers, Sparkles, Type, Image as ImageIcon, Wand2, Cpu, Package } from '@lucide/vue'
+import MediaGallery from './MediaGallery.vue'
 import BundlePicker from './BundlePicker.vue'
+import { isVideoUrl, ordered, catalogMatch } from '../lib/media'
 
 const open = defineModel('open', { type: Boolean })
 const props = defineProps({ item: Object })
 const app = useApp()
+// Samples: its own preview (left out while mature content is off and it is mature), a catalog pack's
+// samples for the same file, then its Civitai gallery and images people generated with it.
+const ICONS = { checkpoints: Box, diffusion_models: Cpu, loras: Layers, embeddings: Sparkles, text_encoders: Type, vae: ImageIcon, upscale_models: Wand2 }
+const mature = computed(() => !!app.settings?.show_nsfw)
+const model = computed(() => props.item && { ...props.item, title: props.item.name })
+const samples = computed(() => {
+  const i = props.item
+  if (!i) return []
+  const own = i.preview && (mature.value || !i.preview_mature)
+    ? [{ url: i.preview, type: isVideoUrl(i.preview) ? 'video' : 'image', nsfw_level: i.preview_mature ? 4 : 1, pack_id: i.id, pack_title: i.name }] : []
+  return [...own, ...ordered(catalogMatch(i, app.catalog?.packs), { mature: mature.value })]
+})
 const form = ref({})
 const triggers = ref('')
 watch(() => [open.value, props.item], () => {
@@ -43,7 +57,7 @@ function copyTriggers() {
 <template>
   <Modal v-model:open="open" :title="item?.name || 'Model'" side="right">
     <template v-if="item">
-      <ModelThumb :src="item.preview" :mature="item.preview_mature" :category="item.category" class="mb-4 aspect-[4/3] w-full rounded-lg" />
+      <MediaGallery :items="samples" :packs="[model]" :mature="mature" :icon="ICONS[item.category] || Package" :seed="String(item.id)" :label="item.name" eager class="mb-4" />
       <div class="mb-4 flex flex-wrap items-center gap-1.5">
         <Tag tone="primary">{{ SOURCE_LABEL[item.source] || item.source }}</Tag>
         <Tag v-if="item.base_model">{{ item.base_model }}</Tag>

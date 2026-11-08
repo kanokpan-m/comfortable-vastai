@@ -1,0 +1,299 @@
+{
+ "workflow": "zimage-controlnet",
+ "graph_sha256": "72a631525c2c067aa32d5a914a88749cfc7f470d0a97b15a46fbcadf978a1309",
+ "frontend": "1.58.5",
+ "prompt": {
+  "9": {
+   "inputs": {
+    "filename_prefix": "z-image-turbo",
+    "images": [
+     "70:43",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.64"
+   }
+  },
+  "56": {
+   "inputs": {
+    "images": [
+     "57",
+     0
+    ]
+   },
+   "class_type": "PreviewImage",
+   "_meta": {
+    "title": "Preview Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.76"
+   }
+  },
+  "57": {
+   "inputs": {
+    "low_threshold": 0.1,
+    "high_threshold": 0.32,
+    "image": [
+     "58",
+     0
+    ]
+   },
+   "class_type": "Canny",
+   "_meta": {
+    "title": "Detect Edges (Canny)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.76"
+   }
+  },
+  "58": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Load Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.76"
+   }
+  },
+  "70:39": {
+   "inputs": {
+    "clip_name": "qwen_3_4b.safetensors",
+    "type": "lumina2",
+    "device": "default"
+   },
+   "class_type": "CLIPLoader",
+   "_meta": {
+    "title": "Load CLIP",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.73"
+   }
+  },
+  "70:46": {
+   "inputs": {
+    "unet_name": "z_image_turbo_bf16.safetensors",
+    "weight_dtype": "default"
+   },
+   "class_type": "UNETLoader",
+   "_meta": {
+    "title": "Load Diffusion Model",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.73"
+   }
+  },
+  "70:40": {
+   "inputs": {
+    "vae_name": "ae.safetensors"
+   },
+   "class_type": "VAELoader",
+   "_meta": {
+    "title": "Load VAE",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.73"
+   }
+  },
+  "70:64": {
+   "inputs": {
+    "name": "Z-Image-Turbo-Fun-Controlnet-Union.safetensors"
+   },
+   "class_type": "ModelPatchLoader",
+   "_meta": {
+    "title": "Load Model Patch",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.51"
+   }
+  },
+  "70:43": {
+   "inputs": {
+    "samples": [
+     "70:44",
+     0
+    ],
+    "vae": [
+     "70:40",
+     0
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.64"
+   }
+  },
+  "70:47": {
+   "inputs": {
+    "shift": 3,
+    "sampling": "flow",
+    "model": [
+     "70:60",
+     0
+    ]
+   },
+   "class_type": "ModelSamplingAuraFlow",
+   "_meta": {
+    "title": "ModelSamplingAuraFlow",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.64"
+   }
+  },
+  "70:44": {
+   "inputs": {
+    "seed": 729703840979498,
+    "steps": 8,
+    "cfg": 1,
+    "sampler_name": "res_multistep",
+    "scheduler": "simple",
+    "denoise": 1,
+    "model": [
+     "70:47",
+     0
+    ],
+    "positive": [
+     "70:45",
+     0
+    ],
+    "negative": [
+     "70:42",
+     0
+    ],
+    "latent_image": [
+     "70:41",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "KSampler",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.64"
+   }
+  },
+  "70:42": {
+   "inputs": {
+    "conditioning": [
+     "70:45",
+     0
+    ]
+   },
+   "class_type": "ConditioningZeroOut",
+   "_meta": {
+    "title": "Conditioning Zero Out",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.73"
+   }
+  },
+  "70:60": {
+   "inputs": {
+    "strength": 1,
+    "start_percent": 0,
+    "end_percent": 1,
+    "model": [
+     "70:46",
+     0
+    ],
+    "model_patch": [
+     "70:64",
+     0
+    ],
+    "vae": [
+     "70:40",
+     0
+    ],
+    "image": [
+     "57",
+     0
+    ]
+   },
+   "class_type": "QwenImageDiffsynthControlnet",
+   "_meta": {
+    "title": "Apply Qwen Image DiffSynth ControlNet",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.76"
+   }
+  },
+  "70:41": {
+   "inputs": {
+    "width": [
+     "70:69",
+     0
+    ],
+    "height": [
+     "70:69",
+     1
+    ],
+    "batch_size": 1
+   },
+   "class_type": "EmptySD3LatentImage",
+   "_meta": {
+    "title": "EmptySD3LatentImage",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.64"
+   }
+  },
+  "70:45": {
+   "inputs": {
+    "text": "Realistic photo, close-up of a latina model peeking through pine branches, dappled sunlight on her face, natural, moody, smooth skin, a little bit film grain.\n",
+    "clip": [
+     "70:39",
+     0
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "CLIP Text Encode (Prompt)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.73"
+   }
+  },
+  "70:69": {
+   "inputs": {
+    "image": [
+     "57",
+     0
+    ]
+   },
+   "class_type": "GetImageSize",
+   "_meta": {
+    "title": "Get Image Size",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.76"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "70:45",
+   "input": "text",
+   "label": "text"
+  },
+  {
+   "node": "70:44",
+   "input": "seed",
+   "label": "seed"
+  },
+  {
+   "node": "70:46",
+   "input": "unet_name",
+   "label": "unet_name"
+  },
+  {
+   "node": "70:39",
+   "input": "clip_name",
+   "label": "clip_name"
+  },
+  {
+   "node": "70:40",
+   "input": "vae_name",
+   "label": "vae_name"
+  },
+  {
+   "node": "70:64",
+   "input": "name",
+   "label": "patch_model"
+  }
+ ]
+}

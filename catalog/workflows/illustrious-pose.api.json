@@ -1,0 +1,300 @@
+{
+ "workflow": "illustrious-pose",
+ "graph_sha256": "77a216fb548658b381c11e757644f7e5d239f7122fb67cf126db72d1292551aa",
+ "frontend": "1.58.5",
+ "prompt": {
+  "667": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Pose reference image",
+    "cnr_id": "comfy-core",
+    "ver": "0.15.1"
+   }
+  },
+  "678": {
+   "inputs": {
+    "images": [
+     "675:672",
+     0
+    ]
+   },
+   "class_type": "PreviewImage",
+   "_meta": {
+    "title": "Pose preview"
+   }
+  },
+  "679": {
+   "inputs": {
+    "ckpt_name": "WAI-Nsfw-Illustrious-17.safetensors"
+   },
+   "class_type": "CheckpointLoaderSimple",
+   "_meta": {
+    "title": "Load Checkpoint"
+   }
+  },
+  "680": {
+   "inputs": {
+    "text": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, 1girl, solo, long hair, swimsuit, beach, sunlight, full body, looking at viewer",
+    "clip": [
+     "679",
+     1
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "Positive prompt"
+   }
+  },
+  "681": {
+   "inputs": {
+    "text": "bad quality, worst quality, worst detail, sketch, censor, watermark, signature, bad anatomy, bad hands, extra limbs",
+    "clip": [
+     "679",
+     1
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "Negative prompt"
+   }
+  },
+  "682": {
+   "inputs": {
+    "control_net_name": "openpose_noob.safetensors"
+   },
+   "class_type": "ControlNetLoader",
+   "_meta": {
+    "title": "Load ControlNet Model"
+   }
+  },
+  "683": {
+   "inputs": {
+    "strength": 0.85,
+    "start_percent": 0,
+    "end_percent": 0.9,
+    "positive": [
+     "680",
+     0
+    ],
+    "negative": [
+     "681",
+     0
+    ],
+    "control_net": [
+     "682",
+     0
+    ],
+    "image": [
+     "675:672",
+     0
+    ],
+    "vae": [
+     "679",
+     2
+    ]
+   },
+   "class_type": "ControlNetApplyAdvanced",
+   "_meta": {
+    "title": "Apply pose"
+   }
+  },
+  "684": {
+   "inputs": {
+    "width": 832,
+    "height": 1216,
+    "batch_size": 1
+   },
+   "class_type": "EmptyLatentImage",
+   "_meta": {
+    "title": "Empty Latent Image"
+   }
+  },
+  "685": {
+   "inputs": {
+    "seed": 777,
+    "steps": 25,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 1,
+    "model": [
+     "679",
+     0
+    ],
+    "positive": [
+     "683",
+     0
+    ],
+    "negative": [
+     "683",
+     1
+    ],
+    "latent_image": [
+     "684",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "KSampler"
+   }
+  },
+  "686": {
+   "inputs": {
+    "samples": [
+     "685",
+     0
+    ],
+    "vae": [
+     "679",
+     2
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode"
+   }
+  },
+  "687": {
+   "inputs": {
+    "filename_prefix": "illustrious/pose",
+    "images": [
+     "686",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image"
+   }
+  },
+  "675:671": {
+   "inputs": {
+    "batch_size": 16,
+    "model": [
+     "675:673",
+     0
+    ],
+    "vae": [
+     "675:673",
+     2
+    ],
+    "image": [
+     "675:674",
+     0
+    ]
+   },
+   "class_type": "SDPoseKeypointExtractor",
+   "_meta": {
+    "title": "SDPose Keypoint Extractor",
+    "cnr_id": "comfy-core",
+    "ver": "0.15.0"
+   }
+  },
+  "675:674": {
+   "inputs": {
+    "resize_type": "scale longer dimension",
+    "resize_type.longer_size": 1024,
+    "scale_method": "area",
+    "input": [
+     "667",
+     0
+    ]
+   },
+   "class_type": "ResizeImageMaskNode",
+   "_meta": {
+    "title": "Resize Image/Mask",
+    "cnr_id": "comfy-core",
+    "ver": "0.15.0"
+   }
+  },
+  "675:672": {
+   "inputs": {
+    "draw_body": true,
+    "draw_hands": true,
+    "draw_face": true,
+    "draw_feet": true,
+    "stick_width": 4,
+    "face_point_size": 2,
+    "score_threshold": 0.5,
+    "draw_head": true,
+    "keypoints": [
+     "675:671",
+     0
+    ]
+   },
+   "class_type": "SDPoseDrawKeypoints",
+   "_meta": {
+    "title": "SDPose Draw Keypoints",
+    "cnr_id": "comfy-core",
+    "ver": "0.15.0"
+   }
+  },
+  "675:673": {
+   "inputs": {
+    "ckpt_name": "sdpose_wholebody_fp16.safetensors"
+   },
+   "class_type": "CheckpointLoaderSimple",
+   "_meta": {
+    "title": "Load Checkpoint",
+    "cnr_id": "comfy-core",
+    "ver": "0.15.0"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "675:674",
+   "input": "resize_type.longer_size",
+   "label": "resize_target_longer_size"
+  },
+  {
+   "node": "675:674",
+   "input": "scale_method",
+   "label": "scale_method"
+  },
+  {
+   "node": "675:672",
+   "input": "draw_body",
+   "label": "draw_body"
+  },
+  {
+   "node": "675:672",
+   "input": "draw_hands",
+   "label": "draw_hands"
+  },
+  {
+   "node": "675:672",
+   "input": "draw_face",
+   "label": "draw_face"
+  },
+  {
+   "node": "675:672",
+   "input": "draw_feet",
+   "label": "draw_feet"
+  },
+  {
+   "node": "675:672",
+   "input": "stick_width",
+   "label": "stick_width"
+  },
+  {
+   "node": "675:672",
+   "input": "face_point_size",
+   "label": "face_point_size"
+  },
+  {
+   "node": "675:672",
+   "input": "score_threshold",
+   "label": "score_threshold"
+  },
+  {
+   "node": "675:673",
+   "input": "ckpt_name",
+   "label": "ckpt_name"
+  }
+ ]
+}

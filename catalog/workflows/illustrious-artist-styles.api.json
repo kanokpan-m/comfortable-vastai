@@ -1,0 +1,318 @@
+{
+ "workflow": "illustrious-artist-styles",
+ "graph_sha256": "40f56dad081fb3ef0d2d78b3027ee77b3533f8ca1276973991134c35b5b845c3",
+ "frontend": "1.58.5",
+ "prompt": {
+  "2": {
+   "inputs": {
+    "ckpt_name": "WAI-Nsfw-Illustrious-17.safetensors"
+   },
+   "class_type": "CheckpointLoaderSimple",
+   "_meta": {
+    "title": "Load Checkpoint"
+   }
+  },
+  "3": {
+   "inputs": {
+    "lora_name": "oobari_style_illustrious_ver2.safetensors",
+    "strength_model": 0.75,
+    "strength_clip": 0.75,
+    "model": [
+     "2",
+     0
+    ],
+    "clip": [
+     "2",
+     1
+    ]
+   },
+   "class_type": "LoraLoader",
+   "_meta": {
+    "title": "Artist LoRA"
+   }
+  },
+  "4": {
+   "inputs": {
+    "text": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, obari_style, retro artstyle, 1girl, solo, mature female, long hair, pilot suit, cockpit, city lights, night, dynamic pose, looking at viewer, confident smile",
+    "clip": [
+     "3",
+     1
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "Positive prompt"
+   }
+  },
+  "5": {
+   "inputs": {
+    "text": "bad quality, worst quality, worst detail, sketch, censor, mosaic censoring, bar censor, watermark, signature, artist name, bad anatomy, bad hands, extra digits, fewer digits, jpeg artifacts",
+    "clip": [
+     "3",
+     1
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "Negative prompt"
+   }
+  },
+  "6": {
+   "inputs": {
+    "width": 832,
+    "height": 1216,
+    "batch_size": 1
+   },
+   "class_type": "EmptyLatentImage",
+   "_meta": {
+    "title": "Empty Latent Image"
+   }
+  },
+  "7": {
+   "inputs": {
+    "seed": 4242,
+    "steps": 25,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 1,
+    "model": [
+     "3",
+     0
+    ],
+    "positive": [
+     "4",
+     0
+    ],
+    "negative": [
+     "5",
+     0
+    ],
+    "latent_image": [
+     "6",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "Base image"
+   }
+  },
+  "8": {
+   "inputs": {
+    "samples": [
+     "7",
+     0
+    ],
+    "vae": [
+     "2",
+     2
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode"
+   }
+  },
+  "9": {
+   "inputs": {
+    "images": [
+     "8",
+     0
+    ]
+   },
+   "class_type": "PreviewImage",
+   "_meta": {
+    "title": "Base image preview"
+   }
+  },
+  "10": {
+   "inputs": {
+    "model_name": "2x-AnimeSharpV4_RCAN.safetensors"
+   },
+   "class_type": "UpscaleModelLoader",
+   "_meta": {
+    "title": "Load Upscale Model"
+   }
+  },
+  "11": {
+   "inputs": {
+    "upscale_model": [
+     "10",
+     0
+    ],
+    "image": [
+     "8",
+     0
+    ]
+   },
+   "class_type": "ImageUpscaleWithModel",
+   "_meta": {
+    "title": "Upscale Image (using Model)"
+   }
+  },
+  "12": {
+   "inputs": {
+    "upscale_method": "lanczos",
+    "scale_by": 0.75,
+    "image": [
+     "11",
+     0
+    ]
+   },
+   "class_type": "ImageScaleBy",
+   "_meta": {
+    "title": "Scale to 1.5x"
+   }
+  },
+  "13": {
+   "inputs": {
+    "pixels": [
+     "12",
+     0
+    ],
+    "vae": [
+     "2",
+     2
+    ]
+   },
+   "class_type": "VAEEncode",
+   "_meta": {
+    "title": "VAE Encode"
+   }
+  },
+  "14": {
+   "inputs": {
+    "seed": 4243,
+    "steps": 20,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 0.4,
+    "model": [
+     "3",
+     0
+    ],
+    "positive": [
+     "4",
+     0
+    ],
+    "negative": [
+     "5",
+     0
+    ],
+    "latent_image": [
+     "13",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "Hires pass"
+   }
+  },
+  "15": {
+   "inputs": {
+    "samples": [
+     "14",
+     0
+    ],
+    "vae": [
+     "2",
+     2
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode"
+   }
+  },
+  "16": {
+   "inputs": {
+    "model_name": "bbox/face_yolov8m.pt"
+   },
+   "class_type": "UltralyticsDetectorProvider",
+   "_meta": {
+    "title": "UltralyticsDetectorProvider"
+   }
+  },
+  "17": {
+   "inputs": {
+    "guide_size": 512,
+    "guide_size_for": true,
+    "max_size": 1024,
+    "seed": 4244,
+    "steps": 20,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 0.4,
+    "feather": 5,
+    "noise_mask": true,
+    "force_inpaint": true,
+    "bbox_threshold": 0.5,
+    "bbox_dilation": 10,
+    "bbox_crop_factor": 3,
+    "sam_detection_hint": "center-1",
+    "sam_dilation": 0,
+    "sam_threshold": 0.93,
+    "sam_bbox_expansion": 0,
+    "sam_mask_hint_threshold": 0.7,
+    "sam_mask_hint_use_negative": "False",
+    "drop_size": 10,
+    "wildcard": "",
+    "cycle": 1,
+    "inpaint_model": false,
+    "noise_mask_feather": 20,
+    "tiled_encode": false,
+    "tiled_decode": false,
+    "image": [
+     "15",
+     0
+    ],
+    "model": [
+     "3",
+     0
+    ],
+    "clip": [
+     "3",
+     1
+    ],
+    "vae": [
+     "2",
+     2
+    ],
+    "positive": [
+     "4",
+     0
+    ],
+    "negative": [
+     "5",
+     0
+    ],
+    "bbox_detector": [
+     "16",
+     0
+    ]
+   },
+   "class_type": "FaceDetailer",
+   "_meta": {
+    "title": "FaceDetailer"
+   }
+  },
+  "18": {
+   "inputs": {
+    "filename_prefix": "illustrious/artist",
+    "images": [
+     "17",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image"
+   }
+  }
+ },
+ "controls": []
+}

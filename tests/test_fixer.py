@@ -287,5 +287,23 @@ class FileTypeGuard(unittest.TestCase):
         self.assertIsNone(downloads.safetensors_kind(self.write(["model.diffusion_model.x", "first_stage_model.decoder.x"])))
 
 
+class PreviewPick(unittest.TestCase):
+    """Civitai previews: video models publish only clips, flagged pictures are never used."""
+    BASE = "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/0b6e-uuid"
+
+    def test_video_only_gallery_gives_a_still(self):
+        clips = [{"type": "video", "url": f"{self.BASE}/original=true/145140122.mp4", "nsfwLevel": 2}]
+        self.assertEqual(fixer.sources._pick_preview(clips, show_nsfw=False),
+                         (f"{self.BASE}/transcode=true,anim=false,width=450/145140122.jpeg", False))
+
+    def test_images_win_and_flagged_ones_are_skipped(self):
+        images = [{"type": "image", "url": f"{self.BASE}/original=true/1.jpeg", "nsfwLevel": 1, "minor": True},
+                  {"type": "video", "url": f"{self.BASE}/original=true/2.mp4", "nsfwLevel": 1},
+                  {"type": "image", "url": f"{self.BASE}/original=true/3.jpeg", "nsfwLevel": 4},
+                  {"type": "image", "url": f"{self.BASE}/original=true/4.jpeg", "nsfwLevel": 2, "poi": True}]
+        self.assertEqual(fixer.sources._pick_preview(images, show_nsfw=False), (f"{self.BASE}/original=true/3.jpeg", True))
+        self.assertEqual(fixer.sources._pick_preview([], show_nsfw=True), ("", False))
+
+
 if __name__ == "__main__":
     unittest.main()

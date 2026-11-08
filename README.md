@@ -2,8 +2,6 @@
 
 # Comfortable for Vast.ai
 
-*Formerly Comfy-Xtra.*
-
 Provisioning for the `vastai/comfy` image: installs the Comfortable model manager
 dashboard (port 17890, exposed through the Instance Portal on 7890), a Comfortable tab inside
 ComfyUI, and an auto-tuned ComfyUI speed boost.
@@ -32,6 +30,22 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 - **Library and bundles.** Save models (Civitai, Hugging Face, any URL) into bundles; turn a
   workflow's models into a bundle; mark bundles to install automatically on every new instance.
   Library entries are re-checked in the background and flagged when their source disappears.
+- **Suggested by AI.** A researched catalog of packs, each one every file a setup needs (model,
+  text encoder, VAE, speed LoRAs, node packs), in categories: NSFW video, NSFW photo, hentai,
+  poses & concepts, base models, anime, image edit, video, music & audio, 3D, "this artist"
+  styles, stylize, realism, pose & ControlNet, upscale, face & detail, speed, utilities. Packs
+  that fit the base models in your library are ranked first ("For you"). One click installs a
+  pack (and the packs it needs);
+  another saves it as a bundle. Mature suggestions follow "Show mature content" in Settings.
+- **Workflows.** Starter workflows (Krea 2, Qwen-Image edit, Z-Image ControlNet, Illustrious,
+  MiniMax H3 and DaSiWa video from an image or text, first & last frame, LTX-2.3 with lip sync,
+  Wan Animate character swap, anime inpainting and line art, artist and style looks, new camera
+  angles, layout, background removal, image to prompt, image to 3D, text to music, SeedVR2
+  upscaling, frame interpolation, ...): installs every model and node pack, then opens the
+  workflow in ComfyUI with the right model in every node.
+- **Create.** Run any starter from a plain form made for phones: prompt, pictures / audio / video
+  from your camera roll, size, seed, the template's own switches, LoRAs added on the spot, model
+  swaps and every other setting; progress and results on the same screen.
 - **Host health.** About 20 s after boot the dashboard measures usable VRAM, power limit, PCIe
   link, host→GPU copy speed, disk read and download speed, and warns about hosts that would give
   you a fraction of the GPU you paid for.
@@ -41,6 +55,32 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
   to a private Hugging Face dataset, **update in place** from Settings, browser notifications,
   Ctrl+K command palette.
 
+## From your phone: the hub
+
+`tools/comfortable_hub.py` runs on your PC (later a small always-on server) and is the phone's way
+in, even when no GPU is rented:
+
+```bash
+uv run --script tools/comfortable_hub.py --set-pin   # choose the PIN (4-12 digits)
+uv run --script tools/comfortable_hub.py             # prints the address to open on the phone
+```
+
+- **Start:** what you want to make → which starter workflows → the best GPUs for them right now
+  (real cost per hour, speed from your benchmarks, about when it's ready) → one tap rents the offer
+  you saw at that price → live setup (boot, host check, model downloads) → Create. Your instances
+  with their cost so far; connect, stop, start or destroy, each after a confirmation.
+- **Everything else** is the connected instance's dashboard, passed through an SSH tunnel: no
+  portal address or token on the phone.
+- **Saved:** every new image, video and song is copied to `~/Comfortable/outputs/<instance>/`
+  on the PC within about 20 s (`COMFORTABLE_HUB_BACKUP_DIR` to change it), and stays browsable
+  from the phone after the instance is gone.
+
+Same Wi-Fi works as is (Windows asks once to allow it: private networks only). From anywhere,
+install [Tailscale](https://tailscale.com) on the PC and the phone and open the PC's Tailscale
+address. Five wrong PINs lock sign-in for 5 minutes, doubling each time; `--set-pin` signs every
+phone out. Renting goes through the MCP server's code and rules: only offers shown in the last 30
+minutes, re-checked before renting.
+
 ## Template environment variables
 
 | Variable | Default | Effect |
@@ -48,6 +88,7 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 | `COMFORTABLE_REF` | `main` | Branch, tag or commit to install (and to update to). Use a branch to test changes. |
 | `COMFORTABLE_REPO` | `kanokpan-m/comfortable-vastai` | Repository to install from. |
 | `COMFORTABLE_BUNDLES` | | Bundle names or ids to download on boot, comma separated (in addition to bundles marked auto-install). |
+| `COMFORTABLE_INSTALL` | | Catalog pack and starter workflow ids to set up on boot, comma separated: files, node packs (then a ComfyUI restart if it's idle), starters saved into ComfyUI. Set by `comfortable rent --install` and the MCP server. |
 | `COMFORTABLE_MODEL_VOLUME` | | Path of a mounted Vast volume (e.g. `/mnt/models`). Model folders live there, so they survive the instance. |
 | `COMFORTABLE_COMFY_EXTENSION` | `1` | `0`: don't add the Comfortable tab and workflow checks to ComfyUI. |
 | `COMFORTABLE_HF_AUTHORS` | `Comfy-Org,Kijai,city96,QuantStack,lllyasviel` | Hugging Face accounts the fixer indexes to find missing models by filename. |
@@ -55,12 +96,9 @@ https://raw.githubusercontent.com/kanokpan-m/comfortable-vastai/refs/heads/main/
 | `COMFORTABLE_TUNE` | `1` | `0`: skip auto-tuning and use the template's `COMFYUI_ARGS` unchanged. |
 | `COMFORTABLE_ATTENTION` | `auto` | Force `sage`, `ck`, `xformers` or `pytorch` instead of the benchmark winner. |
 | `COMFY_FAST` | `0` | `1`: the `--fast` features this GPU supports (fp16 accumulation, autotune, fp8 matmul on RTX 40+). `all`: every `--fast` feature. |
-| `MONGO_URI` | | MongoDB for library/bundles/settings/benchmarks shared between instances; SQLite is used if unset or unreachable. |
+| `MONGO_URI` | | MongoDB for library/bundles/settings/benchmarks and the suggestions catalog, shared between instances; SQLite is used if unset or unreachable. |
+| `COMFORTABLE_MONGO_DB` | `comfortable` | Database name in that MongoDB (layout: [docs/database.md](docs/database.md)). |
 | `DISCORD_WEBHOOK` | | Provisioning, auto-stop and host-health notifications. |
-
-The `XTRA_*` names from before the rename (`XTRA_REF`, `XTRA_BUNDLES`, ...) still work; the
-`COMFORTABLE_*` name wins when both are set. The shared MongoDB database keeps its old name,
-`comfy_xtra`, so every instance still sees the same library.
 
 An attention backend is only chosen after it runs on the GPU and matches PyTorch's
 output. The chosen flags are written to `/workspace/.env`, which ComfyUI's launcher
@@ -91,8 +129,22 @@ the VRAM and download size from the workflow (`comfortable needs workflow.json` 
 `--auto-swap` replaces a host that fails the check automatically.
 
 `--keep-models` creates a Vast local volume (`comfortable-models`) on the first rent and links it
-afterwards; local volumes are tied to one machine. `tools/claude-skill/` is the same tool packaged
-as a Claude Code skill: copy that folder plus `tools/comfortable.py` to `~/.claude/skills/comfortable/`.
+afterwards; local volumes are tied to one machine.
+
+`comfortable catalog [words]` searches the "Suggested by AI" catalog (`--ids a,b` shows what they
+install), and `offers` / `rent --install a,b` size the GPU for those packs and starter workflows and
+set them up at boot (`COMFORTABLE_INSTALL`): files download while ComfyUI is still starting, node
+packs install once it's up, and the starters appear in ComfyUI's Workflows sidebar.
+
+## For AI assistants: MCP server and Claude skill
+
+`tools/comfortable_mcp.py` is an MCP server with 26 tools: find, plan and install catalog setups in
+one call, watch downloads, open starters in ComfyUI, check and fix any workflow, search models and
+node packs, manage bundles, and find, rent (only offers it showed you, with your confirmation) and
+manage GPUs. Install it in Claude Code with
+`claude mcp add comfortable --scope user -- uv run --script /path/to/tools/comfortable_mcp.py`;
+details in [docs/mcp.md](docs/mcp.md). `tools/claude-skill/` is the matching Claude Code skill (copy
+the folder to `~/.claude/skills/comfortable/`).
 
 ## Layout
 
@@ -111,12 +163,14 @@ as a Claude Code skill: copy that folder plus `tools/comfortable.py` to `~/.clau
 | `lib/update.sh` | Update in place: swaps `/opt/comfortable` for the latest `COMFORTABLE_REF` and restarts the dashboard. |
 | `comfyui_ext/` | The ComfyUI extension: proxies `/comfortable/*` to the dashboard and adds the Comfortable tab and workflow-load check. |
 | `dashboard/server.py` | Dashboard entry point (aiohttp, runs in ComfyUI's venv; binds 127.0.0.1:17890 behind the portal). |
-| `dashboard/comfortable/` | Backend: `store` (SQLite + background MongoDB sync), `sources` (Civitai / Hugging Face), `downloads` (aria2 queue with resume + SHA-256 checks), `models`, `workflows`, `fixer` (model and node-pack resolution), `library`, `health`, `bench`, `autostop`, `backup`, `updater`, `system`, `gallery`, `api` / `api_more` (routes), `events` (SSE). |
+| `dashboard/comfortable/` | Backend: `store` (SQLite + incremental MongoDB sync, schema v3), `schema` (document shapes), `sources` (Civitai / Hugging Face), `downloads` (aria2 queue with resume + SHA-256 checks), `models`, `workflows`, `fixer` (model and node-pack resolution), `manager` (ComfyUI-Manager, legacy or built-in `/v2` API), `catalog` (suggestions and starter workflows), `create` (the Create screen: starter forms and runs), `library`, `health`, `bench`, `autostop`, `backup`, `updater`, `system`, `gallery`, `api` / `api_more` / `api_catalog` (routes), `events` (SSE). |
+| `catalog/` | The "Suggested by AI" catalog (`catalog.json`), starter workflow graphs (`workflows/`) and the recipes that build them from ComfyUI's official templates (`starters.json`). See [catalog/README.md](catalog/README.md). |
+| `docs/database.md` | The MongoDB / SQLite layout and how instances sync. |
 | `dashboard/ui/` | Web UI source: Vue 3 + Tailwind CSS 4 + reka-ui + Lucide, the same stack and design tokens as ComfyUI's frontend. |
 | `dashboard/web/` | Built web UI (committed, so instances need no Node), served at `/`. |
 | `supervisor/` | supervisord program definition and launcher. |
-| `tools/` | `comfortable.py` (rent/manage CLI), `claude-skill/`, `build-sage-wheel.sh` (the SageAttention wheel published as a release). |
-| `tests/api_test.py` | End-to-end API test, run by CI against a local server. |
+| `tools/` | `comfortable.py` (rent/manage CLI), `comfortable_mcp.py` (MCP server for AI assistants, [docs/mcp.md](docs/mcp.md)), `catalog.py` (check, verify and publish the catalog to MongoDB), `starters.py` (build starter workflows from official templates), `starter_api.py` (save each starter in the form ComfyUI runs, for the Create screen), `comfortable_hub.py` (the phone hub), `claude-skill/` (the Claude Code skill), `build-sage-wheel.sh` (the SageAttention wheel published as a release). |
+| `tests/` | `api_test.py` (end-to-end API test, run by CI against a local server) and offline unit tests (`test_cli`, `test_fixer`, `test_store`, `test_mcp`, `test_starters`, `test_hub`, `test_create`). |
 
 ## Development
 

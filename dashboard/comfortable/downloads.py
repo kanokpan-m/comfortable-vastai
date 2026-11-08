@@ -116,8 +116,13 @@ class DownloadManager:
             "status": "queued", "error": "", "attempt": 0, "auto": auto,
             "created_at": now(), "started_at": None, "finished_at": None,
         }
-        if target.exists() and target.stat().st_size > 1024 and (not task["size"] or abs(target.stat().st_size - task["size"]) < 1024 * 1024):
-            task.update(status="done", done=target.stat().st_size, size=target.stat().st_size,
+        existing = target
+        twin = {v: k for k, v in config.SAME_FOLDER.items()} | config.SAME_FOLDER
+        if not target.exists() and twin.get(category):
+            # ComfyUI reads unet/ as diffusion_models/ (and clip/ as text_encoders/): a copy there counts.
+            existing = model_path(twin[category], filename, subdirs=True)
+        if existing.exists() and existing.stat().st_size > 1024 and (not task["size"] or abs(existing.stat().st_size - task["size"]) < 1024 * 1024):
+            task.update(status="done", done=existing.stat().st_size, size=existing.stat().st_size,
                         error="Already installed", finished_at=now())
             self.tasks[task["id"]] = task
             self._emit(task)
@@ -180,8 +185,8 @@ class DownloadManager:
 
     async def _run(self, task):
         staging = config.staging_root(task["target"]) / task["id"]
-        staging.mkdir(parents=True, exist_ok=True)
         part = staging / task["filename"]
+        part.parent.mkdir(parents=True, exist_ok=True)  # the filename may name a sub-folder (bbox/face.pt)
         while task["status"] in ACTIVE:
             task["attempt"] += 1
             task.update(status="starting", error="", started_at=task["started_at"] or now())

@@ -1,0 +1,360 @@
+{
+ "workflow": "anima-artist-styles",
+ "graph_sha256": "dda5c1a2f5b57fe1735ae17473189dc06d96a27153457c39d6db2b520c3ef545",
+ "frontend": "1.58.5",
+ "prompt": {
+  "46": {
+   "inputs": {
+    "filename_prefix": "Anima",
+    "images": [
+     "90:73",
+     0
+    ]
+   },
+   "class_type": "SaveImage",
+   "_meta": {
+    "title": "Save Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.1"
+   }
+  },
+  "91": {
+   "inputs": {
+    "aspect_ratio": "1:1 (Square)",
+    "megapixels": 1,
+    "multiple": 16
+   },
+   "class_type": "ResolutionSelector",
+   "_meta": {
+    "title": "Resolution Selector"
+   }
+  },
+  "90:71": {
+   "inputs": {
+    "clip_name": "qwen_3_06b_base.safetensors",
+    "type": "stable_diffusion",
+    "device": "default"
+   },
+   "class_type": "CLIPLoader",
+   "_meta": {
+    "title": "Load CLIP",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.0"
+   }
+  },
+  "90:72": {
+   "inputs": {
+    "vae_name": "qwen_image_vae.safetensors"
+   },
+   "class_type": "VAELoader",
+   "_meta": {
+    "title": "Load VAE",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "90:73": {
+   "inputs": {
+    "samples": [
+     "90:76",
+     0
+    ],
+    "vae": [
+     "90:72",
+     0
+    ]
+   },
+   "class_type": "VAEDecode",
+   "_meta": {
+    "title": "VAE Decode",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "90:74": {
+   "inputs": {
+    "width": [
+     "91",
+     0
+    ],
+    "height": [
+     "91",
+     1
+    ],
+    "batch_size": 1
+   },
+   "class_type": "EmptyLatentImage",
+   "_meta": {
+    "title": "Empty Latent Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "90:75": {
+   "inputs": {
+    "text": "worst quality, low quality, score_1, score_2, score_3, artist name, signature, watermark, blurry, jpeg artifacts",
+    "clip": [
+     "90:71",
+     0
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "CLIP Text Encode (Negative Prompt)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.65"
+   }
+  },
+  "90:76": {
+   "inputs": {
+    "seed": 755918130909406,
+    "steps": [
+     "90:85",
+     0
+    ],
+    "cfg": [
+     "90:87",
+     0
+    ],
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1,
+    "model": [
+     "90:84",
+     0
+    ],
+    "positive": [
+     "90:77",
+     0
+    ],
+    "negative": [
+     "90:75",
+     0
+    ],
+    "latent_image": [
+     "90:74",
+     0
+    ]
+   },
+   "class_type": "KSampler",
+   "_meta": {
+    "title": "KSampler",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.40"
+   }
+  },
+  "90:77": {
+   "inputs": {
+    "text": "highres, safe, @arthurrackham, watercolor, ink lines, detailed cross hatching, delicate linework, muted color palette, ornate details. This is a detailed pen and ink and watercolor illustration of a knight resting beside a sleeping dragon under a gnarled oak tree in an enchanted forest at dusk.",
+    "clip": [
+     "90:71",
+     0
+    ]
+   },
+   "class_type": "CLIPTextEncode",
+   "_meta": {
+    "title": "CLIP Text Encode (Positive Prompt)",
+    "cnr_id": "comfy-core",
+    "ver": "0.3.65"
+   }
+  },
+  "90:78": {
+   "inputs": {
+    "unet_name": "anima-base-v1.0.safetensors",
+    "weight_dtype": "default"
+   },
+   "class_type": "UNETLoader",
+   "_meta": {
+    "title": "Load Diffusion Model",
+    "cnr_id": "comfy-core",
+    "ver": "0.11.0"
+   }
+  },
+  "90:79": {
+   "inputs": {
+    "value": 30
+   },
+   "class_type": "PrimitiveInt",
+   "_meta": {
+    "title": "Int (Steps)"
+   }
+  },
+  "90:81": {
+   "inputs": {
+    "value": 8
+   },
+   "class_type": "PrimitiveInt",
+   "_meta": {
+    "title": "Int (Steps)"
+   }
+  },
+  "90:83": {
+   "inputs": {
+    "lora_name": "anima-turbo-lora-v0.2.safetensors",
+    "strength_model": 1,
+    "model": [
+     "90:92",
+     0
+    ]
+   },
+   "class_type": "LoraLoaderModelOnly",
+   "_meta": {
+    "title": "Load LoRA"
+   }
+  },
+  "90:84": {
+   "inputs": {
+    "switch": [
+     "90:89",
+     0
+    ],
+    "on_false": [
+     "90:92",
+     0
+    ],
+    "on_true": [
+     "90:83",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "90:85": {
+   "inputs": {
+    "switch": [
+     "90:89",
+     0
+    ],
+    "on_false": [
+     "90:79",
+     0
+    ],
+    "on_true": [
+     "90:81",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "90:86": {
+   "inputs": {
+    "value": 4
+   },
+   "class_type": "PrimitiveFloat",
+   "_meta": {
+    "title": "Float (CFG)"
+   }
+  },
+  "90:87": {
+   "inputs": {
+    "switch": [
+     "90:89",
+     0
+    ],
+    "on_false": [
+     "90:86",
+     0
+    ],
+    "on_true": [
+     "90:88",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch"
+   }
+  },
+  "90:88": {
+   "inputs": {
+    "value": 1
+   },
+   "class_type": "PrimitiveFloat",
+   "_meta": {
+    "title": "Float (CFG)"
+   }
+  },
+  "90:89": {
+   "inputs": {
+    "value": false
+   },
+   "class_type": "PrimitiveBoolean",
+   "_meta": {
+    "title": "Boolean"
+   }
+  },
+  "90:92": {
+   "inputs": {
+    "lora_name": "Arthur Rackham-000085.safetensors",
+    "strength_model": 1,
+    "model": [
+     "90:78",
+     0
+    ]
+   },
+   "class_type": "LoraLoaderModelOnly",
+   "_meta": {
+    "title": "Artist LoRA",
+    "cnr_id": "comfy-core"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "90:77",
+   "input": "text",
+   "label": "positive_prompt"
+  },
+  {
+   "node": "90:75",
+   "input": "text",
+   "label": "negative_prompt"
+  },
+  {
+   "node": "90:76",
+   "input": "seed",
+   "label": "seed"
+  },
+  {
+   "node": "90:78",
+   "input": "unet_name",
+   "label": "unet_name"
+  },
+  {
+   "node": "90:71",
+   "input": "clip_name",
+   "label": "clip_name"
+  },
+  {
+   "node": "90:72",
+   "input": "vae_name",
+   "label": "vae_name"
+  },
+  {
+   "node": "90:89",
+   "input": "value",
+   "label": "turbo_mode"
+  },
+  {
+   "node": "90:83",
+   "input": "lora_name",
+   "label": "turbo_lora"
+  },
+  {
+   "node": "90:92",
+   "input": "lora_name",
+   "label": "Artist LoRA"
+  },
+  {
+   "node": "90:92",
+   "input": "strength_model",
+   "label": "Artist LoRA"
+  }
+ ]
+}

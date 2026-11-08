@@ -16,7 +16,7 @@ retry 5 apt-get install -y --no-install-recommends aria2 ca-certificates curl jq
 retry 5 "$PYTHON_BIN" -m pip install --no-cache-dir -U certifi 'pymongo[srv]'
 retry 5 "$PYTHON_BIN" -m pip install --no-cache-dir huggingface_hub hf_xet
 
-MODEL_FOLDERS="audio_encoders background_removal checkpoints ckpt clip clip_vision configs controlnet detection diffusers diffusion_models embeddings frame_interpolation geometry_estimation gligen hypernetworks latent_upscale_models loras model_patches optical_flow photomaker style_models text_encoders unet upscale_models vae vae_approx"
+MODEL_FOLDERS="audio_encoders background_removal checkpoints ckpt clip clip_vision configs controlnet detection diffusers diffusion_models embeddings frame_interpolation geometry_estimation gligen hypernetworks ipadapter latent_upscale_models loras model_patches optical_flow photomaker sams style_models text_encoders ultralytics unet upscale_models vae vae_approx"
 for folder in $MODEL_FOLDERS; do
   mkdir -p "$COMFY_BASE/$folder"
 done

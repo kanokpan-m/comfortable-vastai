@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogTitle } from 'reka-ui'
 import {
   Search, BookMarked, Compass, Wand2, Download, Images, Activity, Settings, Plus, HeartPulse, Gauge, CloudUpload,
-  RefreshCw, Package, Layers, CornerDownLeft,
+  RefreshCw, Package, Layers, CornerDownLeft, Sparkles, Workflow,
 } from '@lucide/vue'
 import { api } from '../lib/api'
 import { go } from '../lib/route'
@@ -20,6 +20,8 @@ const run = (fn) => async () => { app.paletteOpen = false; try { await fn() } ca
 const items = computed(() => {
   const base = [
     { group: 'Go to', label: 'Library', icon: BookMarked, run: run(() => go('library')) },
+    { group: 'Go to', label: 'Suggested by AI', hint: 'curated packs', icon: Sparkles, run: run(() => go('suggested')) },
+    { group: 'Go to', label: 'Workflows', hint: 'starter templates', icon: Workflow, run: run(() => go('workflows')) },
     { group: 'Go to', label: 'Discover', icon: Compass, run: run(() => go('discover')) },
     { group: 'Go to', label: 'Fixer', hint: 'missing models & nodes', icon: Wand2, run: run(() => go('fix')) },
     { group: 'Go to', label: 'Downloads', icon: Download, run: run(() => go('downloads')) },
@@ -37,7 +39,9 @@ const items = computed(() => {
     run: run(async () => { const r = await api.post(`bundles/${b.id}/install`); app.toast(r.queued ? `Queued ${r.queued} download(s)` : `${b.name} is already installed`, 'info') }) }))
   const models = app.library.map((i) => ({ group: 'Models', label: i.name, hint: i.installed ? 'installed' : i.filename, icon: Layers,
     run: run(() => go('library', { q: i.filename })) }))
-  return [...base, ...bundles, ...models]
+  const starters = (app.catalog?.workflows || []).map((w) => ({ group: 'Workflows', label: w.title, hint: w.task, icon: Workflow,
+    run: run(() => go('workflows', { open: w.id })) }))
+  return [...base, ...bundles, ...starters, ...models]
 })
 const filtered = computed(() => {
   const terms = q.value.toLowerCase().split(/\s+/).filter(Boolean)

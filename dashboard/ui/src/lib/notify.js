@@ -1,10 +1,8 @@
 // Browser notifications for events you'd otherwise miss in another tab (opt-in in Settings).
 const KEY = 'comfortable-notify'
-// Saved under the pre-rename key until it is next changed.
-const LEGACY_KEY = 'xtra-notify'
 
 export function notifyEnabled() {
-  try { return (localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY)) === '1' && 'Notification' in window && Notification.permission === 'granted' } catch { return false }
+  try { return localStorage.getItem(KEY) === '1' && 'Notification' in window && Notification.permission === 'granted' } catch { return false }
 }
 
 export async function setNotify(on) {

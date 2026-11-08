@@ -222,7 +222,7 @@ const setBundle = (b) => go('library', { bundle: b })
         <ul v-else class="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:gap-3">
           <li v-for="item in items" :key="item.id" class="group flex flex-col overflow-hidden rounded-xl border border-subtle bg-panel transition-colors hover:border-border">
             <button class="relative block text-left" :aria-label="`Edit ${item.name}`" @click="editItem = item; editOpen = true">
-              <ModelThumb :src="item.preview" :mature="item.preview_mature" :category="item.category" :alt="item.name" class="aspect-[4/5] w-full">
+              <ModelThumb :src="item.preview" :mature="item.preview_mature" :category="item.category" :alt="item.name" :item="item" class="aspect-[4/5] w-full">
                 <div class="absolute inset-x-0 top-0 flex justify-between p-2">
                   <span class="flex flex-wrap gap-1">
                     <Tag class="bg-black/60 text-white backdrop-blur">{{ app.categoryLabel(item.category) }}</Tag>

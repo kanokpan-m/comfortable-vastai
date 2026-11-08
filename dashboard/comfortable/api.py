@@ -154,8 +154,8 @@ async def put_settings(request):
 def _with_install_state(items):
     idx = models.index()
     for item in items:
-        where = idx.get((item.get("filename") or "").lower(), [])
-        item["installed"] = item.get("category") in where
+        where = idx.get(os.path.basename(item.get("filename") or "").lower(), [])
+        item["installed"] = any(config.same_folder(item.get("category"), c) for c in where)
         item["installed_in"] = where
     return items
 

@@ -26,7 +26,7 @@ if [[ "${SAGE_ATTENTION:-0}" =~ ^[12]$ ]] && ! install_sage "$SAGE_ATTENTION"; t
   send_discord "⚠️ SageAttention Skipped" "SageAttention failed to install or failed its GPU test. The auto-tuner will pick another backend." 15105570
 fi
 
-sed -i -e '/# comfortable-boost$/d' -e '/# comfy-xtra-boost$/d' "$COMFY_DOTENV" 2>/dev/null || true
+sed -i -e '/# comfortable-boost$/d' "$COMFY_DOTENV" 2>/dev/null || true
 if [[ "${COMFORTABLE_TUNE:-1}" == 0 ]]; then
   log "COMFORTABLE_TUNE=0: leaving COMFYUI_ARGS as set by the template"
   return 0

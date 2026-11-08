@@ -1,0 +1,102 @@
+{
+ "workflow": "remove-background",
+ "graph_sha256": "b84cc81b32315db0a05a891ff1d219d26bd929a513758875dd5058077c24b6f2",
+ "frontend": "1.58.5",
+ "prompt": {
+  "17": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Load Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "18": {
+   "inputs": {
+    "images": [
+     "19:16",
+     0
+    ]
+   },
+   "class_type": "PreviewImage",
+   "_meta": {
+    "title": "Preview Image"
+   }
+  },
+  "20": {
+   "inputs": {
+    "mask": [
+     "19:13",
+     0
+    ]
+   },
+   "class_type": "MaskPreview",
+   "_meta": {
+    "title": "Preview Mask"
+   }
+  },
+  "19:13": {
+   "inputs": {
+    "bg_removal_model": [
+     "19:14",
+     0
+    ],
+    "image": [
+     "17",
+     0
+    ]
+   },
+   "class_type": "RemoveBackground",
+   "_meta": {
+    "title": "Remove Background"
+   }
+  },
+  "19:14": {
+   "inputs": {
+    "bg_removal_name": "birefnet.safetensors"
+   },
+   "class_type": "LoadBackgroundRemovalModel",
+   "_meta": {
+    "title": "Load Background Removal Model"
+   }
+  },
+  "19:15": {
+   "inputs": {
+    "mask": [
+     "19:13",
+     0
+    ]
+   },
+   "class_type": "InvertMask",
+   "_meta": {
+    "title": "Invert Mask"
+   }
+  },
+  "19:16": {
+   "inputs": {
+    "image": [
+     "17",
+     0
+    ],
+    "alpha": [
+     "19:15",
+     0
+    ]
+   },
+   "class_type": "JoinImageWithAlpha",
+   "_meta": {
+    "title": "Join Image with Alpha"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "19:14",
+   "input": "bg_removal_name",
+   "label": "bg_removal_name"
+  }
+ ]
+}

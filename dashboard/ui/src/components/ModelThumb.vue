@@ -1,36 +1,53 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { Box, Layers, Sparkles, Type, Image as ImageIcon, Wand2, Cpu, EyeOff } from '@lucide/vue'
+import { Box, Layers, Sparkles, Type, Image as ImageIcon, Wand2, Cpu, EyeOff, Package } from '@lucide/vue'
 import { useApp } from '../stores/app'
+import { isVideoUrl, isMature, ordered, catalogMatch, useSamples } from '../lib/media'
+import MediaView from './MediaView.vue'
+import MediaPoster from './MediaPoster.vue'
 
-const props = defineProps({ src: String, category: String, alt: { type: String, default: '' }, mature: Boolean })
+// The picture of any model record (library item, search result, download, Fixer candidate). Always
+// shows something: its own preview, else the samples of the catalog pack for the same file, else
+// (live, when those are missing or don't load) the model's Civitai gallery, videos included, and
+// images people generated with it, else a poster in the model's colours with its folder's icon.
+// Mature pictures are blurred unless "Show mature content" is on (or the user taps to reveal).
+const props = defineProps({
+  src: String,
+  category: String,
+  alt: { type: String, default: '' },
+  mature: Boolean,
+  item: { type: Object, default: null },     // where its Civitai version comes from
+  play: { type: String, default: 'hover' },  // videos: 'hover', 'visible' or 'never'
+  width: { type: Number, default: 450 },
+  small: Boolean,
+})
 const app = useApp()
-const failed = ref(false)
+const allowed = computed(() => !!app.settings?.show_nsfw)
 const revealed = ref(false)
-// Mature previews are blurred unless "Show mature content" is on (or the user taps to reveal).
-const hidden = computed(() => props.mature && !app.settings.show_nsfw && !revealed.value)
-const icons = { checkpoints: Box, diffusion_models: Cpu, loras: Layers, embeddings: Sparkles, text_encoders: Type, vae: ImageIcon, upscale_models: Wand2 }
-// Civitai serves resized previews from the same URL with a width parameter.
-const sized = (url) => (url && url.includes('image.civitai.com') ? url.replace('/original=true/', '/width=450/') : url)
+const ICONS = { checkpoints: Box, diffusion_models: Cpu, loras: Layers, embeddings: Sparkles, text_encoders: Type, vae: ImageIcon, upscale_models: Wand2 }
+const model = computed(() => ({
+  id: props.item?.id || props.item?.url || props.src || props.alt,
+  title: props.item?.name || props.alt,
+  nsfw: !!(props.item?.nsfw || props.mature),
+  civitai: props.item?.civitai, files: props.item?.files, url: props.item?.url, page_url: props.item?.page_url,
+}))
+const own = computed(() => (props.src ? [{ url: props.src, type: isVideoUrl(props.src) ? 'video' : 'image', nsfw_level: props.mature ? 4 : 1, pack_id: model.value.id, pack_title: model.value.title }] : []))
+const items = computed(() => [...own.value, ...ordered(catalogMatch(props.item, app.catalog?.packs), { mature: allowed.value })])
+const { list, fail } = useSamples(items, () => [model.value], allowed)
+const cur = computed(() => list.value[0] || null)
+const hidden = computed(() => !!cur.value && isMature(cur.value) && !allowed.value && !revealed.value)
 </script>
 
 <template>
-  <div class="relative overflow-hidden bg-card">
-    <img
-      v-if="props.src && !failed" :src="sized(props.src)" :alt="alt" loading="lazy" decoding="async"
-      class="size-full object-cover transition-[filter] duration-200" :class="hidden && 'scale-110 blur-2xl'"
-      referrerpolicy="no-referrer" @error="failed = true"
-    />
-    <div v-else class="flex size-full items-center justify-center">
-      <component :is="icons[props.category] || Box" class="size-8 text-selected" aria-hidden="true" />
-    </div>
+  <MediaView :item="cur" :width="width" :play="hidden ? 'never' : play" :alt="alt" :blurred="hidden" @error="fail(cur)">
+    <template #placeholder><MediaPoster :seed="String(model.id || category || '')" :icon="ICONS[category] || Package" :small="small" /></template>
     <button
-      v-if="hidden && props.src && !failed" type="button"
+      v-if="hidden && !small" type="button"
       class="absolute inset-0 m-auto flex h-7 w-fit items-center gap-1.5 rounded-full bg-black/60 px-3 text-xs text-white backdrop-blur hover:bg-black/75"
       @click.stop="revealed = true"
     >
       <EyeOff class="size-3.5" /> Mature · show
     </button>
     <slot />
-  </div>
+  </MediaView>
 </template>
