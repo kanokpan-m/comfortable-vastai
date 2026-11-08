@@ -1,8 +1,12 @@
 import { defineStore } from 'pinia'
 import { api } from '../lib/api'
 import { notify } from '../lib/notify'
+import { hub, detectHub, refreshHub } from '../lib/hub'
+import { go, route } from '../lib/route'
 
 const ACTIVE = new Set(['queued', 'starting', 'downloading', 'verifying'])
+let catalogTimer = null
+let events = null // the one EventSource (init can run again, e.g. once the hub connects an instance)
 
 export const useApp = defineStore('app', {
   state: () => ({
@@ -25,7 +29,10 @@ export const useApp = defineStore('app', {
     autostop: null,      // auto-stop status
     backup: null,        // backup status
     update: null,        // in-place update info
+    catalog: null,       // "Suggested by AI" packs and starter workflows, with install state
     paletteOpen: false,
+    hubLogin: false,     // served by a hub that wants the PIN first
+    hubOnly: false,      // served by a hub with no instance connected: only the Start screen works
   }),
 
   getters: {
@@ -39,6 +46,26 @@ export const useApp = defineStore('app', {
 
   actions: {
     async init() {
+      this.bootError = ''
+      // Served by a hub (phone -> your PC -> instance): sign in, and with no instance connected show
+      // only the Start screen until one is.
+      if (hub.checked ? hub.on : await detectHub()) {
+        if (!hub.authed) await detectHub()
+        this.hubLogin = !hub.authed
+        if (this.hubLogin) return
+        try {
+          await refreshHub()
+        } catch (e) {
+          this.bootError = e.message
+          return
+        }
+        this.hubOnly = !hub.state?.connected
+        if (this.hubOnly || !location.hash.replace(/^#\/?/, '')) go('start')
+        if (this.hubOnly) {
+          this.ready = true
+          return
+        }
+      }
       try {
         this.boot = await api.get('bootstrap')
         for (const t of this.boot.downloads || []) this.downloads[t.id] = t
@@ -53,8 +80,17 @@ export const useApp = defineStore('app', {
       this.connect()
     },
 
+    /** The hub just connected an instance: load its dashboard. */
+    async reinit() {
+      this.ready = false
+      this.hubOnly = false
+      await this.init()
+      if (route.value.view === 'start') this.toast('GPU connected: every tab works now', 'success')
+    },
+
     connect() {
-      const es = new EventSource('api/events')
+      if (events) return
+      const es = (events = new EventSource('api/events'))
       es.onopen = () => { this.connected = true }
       es.onerror = () => { this.connected = false } // EventSource reconnects by itself
       const on = (type, fn) => es.addEventListener(type, (e) => fn(JSON.parse(e.data)))
@@ -70,7 +106,7 @@ export const useApp = defineStore('app', {
           if (t.status === 'done' && !t.error) {
             this.toast(`Installed ${t.filename}`, 'success')
             notify('Download finished', t.filename)
-            this.loadModels(); this.loadLibrary()
+            this.loadModels(); this.loadLibrary(); this.refreshCatalog()
           } else if (t.status === 'failed') {
             this.toast(`Download failed: ${t.filename}`, 'error', t.error)
             notify('Download failed', `${t.filename}: ${t.error}`)
@@ -80,9 +116,9 @@ export const useApp = defineStore('app', {
       on('downloads', (list) => { this.downloads = Object.fromEntries(list.map((t) => [t.id, t])) })
       on('system', (s) => { this.system = s; this.comfy = s.comfy || this.comfy })
       on('comfy', (c) => { this.comfy = c })
-      on('library', () => this.loadLibrary())
-      on('bundles', () => this.loadBundles())
-      on('models', () => this.loadModels())
+      on('library', () => { this.loadLibrary(); this.refreshCatalog() })
+      on('bundles', () => { this.loadBundles(); this.refreshCatalog() })
+      on('models', () => { this.loadModels(); this.refreshCatalog() })
       on('settings', (s) => { this.boot.settings = s })
       on('outputs', () => { this.galleryTick++ })
       on('health', (h) => { this.healthRunning = h.running; if (h.result) this.health = h.result })
@@ -96,10 +132,18 @@ export const useApp = defineStore('app', {
         if (d.collections.includes('library')) this.loadLibrary()
         if (d.collections.includes('bundles')) this.loadBundles()
         if (d.collections.includes('settings')) api.get('settings').then((s) => (this.boot.settings = s))
+        if (d.collections.some((c) => c.startsWith('catalog_') || c === 'meta')) this.refreshCatalog()
       })
     },
 
     async loadLibrary() { this.library = await api.get('library') },
+    async loadCatalog() { this.catalog = await api.get('catalog'); return this.catalog },
+    /** Reload the catalog's install state if a screen showed it already (debounced). */
+    refreshCatalog() {
+      if (!this.catalog) return
+      clearTimeout(catalogTimer)
+      catalogTimer = setTimeout(() => this.loadCatalog().catch(() => {}), 800)
+    },
     async loadBundles() { this.bundles = await api.get('bundles') },
     async checkUpdate(force = false) {
       try { this.update = await api.get('update', force ? { force: 1 } : {}) } catch { /* offline */ }

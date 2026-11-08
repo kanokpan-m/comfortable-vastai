@@ -15,7 +15,10 @@ portal token is needed.
   comfortable stop|start|destroy ID
   comfortable api PATH [ID] [-X POST -d JSON]   any dashboard route, e.g. `comfortable api benchmark`
   comfortable logs [ID] [--lines 80]
-Add --json to status / offers / fix / needs for machine-readable output.
+  comfortable catalog [QUERY] [--category nsfw-video] [--ids ID,ID]   starter workflows and model packs
+  comfortable rent --install ID,ID ...   rent sized for them and set them up at boot
+Add --json to status / offers / fix / needs / catalog for machine-readable output.
+For AI assistants there is an MCP server: tools/comfortable_mcp.py (docs/mcp.md).
 
 Prices are real costs: GPU + your disk size per hour, plus the host's download fee for the
 models you'll fetch, spread over --hours. Speed is your own benchmark (images/hour, SD 1.5
@@ -37,35 +40,29 @@ import urllib.request
 from pathlib import Path
 
 def env(name, default=None):
-    """COMFORTABLE_<name>, else XTRA_<name> (the names from before the rename)."""
-    return os.environ.get(f"COMFORTABLE_{name}") or os.environ.get(f"XTRA_{name}") or default
+    """The COMFORTABLE_<name> environment variable, or default."""
+    return os.environ.get(f"COMFORTABLE_{name}") or default
+
+
+# Python run from a venv or by uv sets these for itself; a child Python inheriting them (the vastai CLI
+# is one) loads this Python's standard library instead of its own and crashes.
+os.environ.pop("__PYVENV_LAUNCHER__", None)
+if os.environ.get("UV_INTERNAL__PYTHONHOME") and os.environ.get("PYTHONHOME") == os.environ["UV_INTERNAL__PYTHONHOME"]:
+    os.environ.pop("PYTHONHOME")
+    os.environ.pop("UV_INTERNAL__PYTHONHOME")
 
 
 TEMPLATE_ID = int(env("TEMPLATE_ID", "733467"))
 REPO = "kanokpan-m/comfortable-vastai"
 PROVISIONING_URL = f"https://raw.githubusercontent.com/{REPO}/refs/heads/main/provis.sh"
 VOLUME_LABEL = "comfortable-models"
-LEGACY_VOLUME_LABEL = "comfy-xtra-models"  # volumes created before the rename
 VOLUME_MOUNT = "/mnt/models"
 # Same host-quality filters as the template, plus single-GPU.
 BASE_QUERY = ("compute_cap>=800 cuda_max_good>=12.9 reliability>=0.98 inet_down>=800 disk_bw>=1500 "
               "gpu_display_active=false cpu_ram>=32 geolocation notin [CN] num_gpus=1 verified=true rentable=true")
 
 
-def _home():
-    """Local state folder; ~/.comfy-xtra (from before the rename) moves to ~/.comfortable once."""
-    if env("HOME"):
-        return Path(env("HOME"))
-    home, legacy = Path.home() / ".comfortable", Path.home() / ".comfy-xtra"
-    if legacy.is_dir() and not home.exists():
-        try:
-            legacy.rename(home)
-        except OSError:
-            return legacy
-    return home
-
-
-HOME = _home()
+HOME = Path(env("HOME")) if env("HOME") else Path.home() / ".comfortable"
 BAD_HOSTS_FILE = HOME / "bad_hosts.json"
 SHARED_CACHE = HOME / "shared.json"
 BAD_HOST_DAYS = 30
@@ -101,9 +98,16 @@ POWER_EXPONENT = 0.3
 
 
 # ---- helpers --------------------------------------------------------------------------------
+class CliError(SystemExit):
+    """What went wrong: main() prints it and exits, the MCP server turns it into a tool error."""
+
+    def __init__(self, message, code=1):
+        super().__init__(code)
+        self.message = message
+
+
 def die(msg, code=1):
-    print(f"error: {msg}", file=sys.stderr)
-    sys.exit(code)
+    raise CliError(msg, code)
 
 
 def vast(*args, raw=True, check=True):
@@ -247,7 +251,7 @@ def _shared_from_mongo():
         uri = os.environ.get("MONGO_URI") or template_env("MONGO_URI")
         if not uri:
             return None
-        db = pymongo.MongoClient(uri, serverSelectionTimeoutMS=8000)[env("MONGO_DB", "comfy_xtra")]
+        db = pymongo.MongoClient(uri, serverSelectionTimeoutMS=8000)[env("MONGO_DB", "comfortable")]
         return {c: list(db[c].find({}, {"_id": 0})) for c in ("benchmarks", "hosts")}
     except Exception as exc:
         print(f"(couldn't read your benchmarks from MongoDB: {type(exc).__name__})", file=sys.stderr)
@@ -480,6 +484,136 @@ def vram_tier(gb):
     return next((t for t in VRAM_TIERS if t >= gb), math.ceil(gb))
 
 
+# ---- the "Suggested by AI" catalog: curated packs and starter workflows -------------------------
+CATALOG_FILE = Path(__file__).resolve().parent.parent / "catalog" / "catalog.json"
+CATALOG_URL = f"https://raw.githubusercontent.com/{REPO}/refs/heads/main/catalog/catalog.json"
+VIDEO_TASKS = ("i2v", "t2v", "flf2v", "lipsync", "video")
+_catalog = {"mtime": None, "data": None}
+
+
+def catalog_data():
+    """The catalog shipped with this checkout (re-read when it changes), else the copy on GitHub."""
+    try:
+        mtime = CATALOG_FILE.stat().st_mtime
+        if _catalog["mtime"] != mtime:
+            _catalog.update(data=json.loads(CATALOG_FILE.read_text(encoding="utf-8")), mtime=mtime)
+    except (OSError, ValueError):
+        if _catalog["data"] is None:
+            try:
+                req = urllib.request.Request(CATALOG_URL, headers={"User-Agent": "comfortable"})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    _catalog["data"] = json.loads(r.read().decode("utf-8"))
+            except Exception as exc:
+                die(f"can't read the catalog ({CATALOG_FILE} or {CATALOG_URL}): {exc}")
+    return _catalog["data"]
+
+
+def split_ids(value):
+    """'a,b c' or ['a', 'b'] -> ['a', 'b', 'c']."""
+    parts = re.split(r"[,\s]+", value) if isinstance(value, str) else list(value or [])
+    return list(dict.fromkeys(p.strip() for p in parts if p and p.strip()))
+
+
+def catalog_resolve(cat, ids):
+    """(pack ids to install, the packs they require first; workflow docs; unknown ids)."""
+    packs = {p["id"]: p for p in cat.get("packs") or []}
+    wfs = {w["id"]: w for w in cat.get("workflows") or []}
+    order, chosen, unknown = [], [], []
+
+    def need(pid, path=()):
+        if pid not in packs or pid in order or pid in path:
+            return
+        for req in packs[pid].get("requires") or []:
+            need(req, path + (pid,))
+        order.append(pid)
+
+    for i in split_ids(ids):
+        if i in wfs:
+            chosen.append(wfs[i])
+            for pid in wfs[i].get("packs") or []:
+                need(pid)
+        elif i in packs:
+            need(i)
+        else:
+            unknown.append(i)
+    return order, chosen, unknown
+
+
+def catalog_needs(cat, ids, optional=False):
+    """Download size, VRAM, node packs and Civitai-key needs of catalog packs / starter workflows."""
+    order, wfs, unknown = catalog_resolve(cat, ids)
+    if unknown:
+        die("unknown catalog id(s): " + ", ".join(unknown) + " (find them with `comfortable catalog QUERY`)")
+    packs = {p["id"]: p for p in cat["packs"]}
+    files, seen = [], set()
+    for pid in order:
+        for f in packs[pid].get("files") or []:
+            if (f.get("optional") and not optional) or (f.get("category"), f.get("filename")) in seen:
+                continue
+            seen.add((f.get("category"), f.get("filename")))
+            files.append({**f, "pack": pid})
+    nodes = [np["id"] for pid in order for np in packs[pid].get("node_packs") or []]
+    nodes += [np["id"] for w in wfs for np in w.get("node_packs") or []]
+    return {"ids": split_ids(ids), "packs": order, "workflows": [w["id"] for w in wfs], "files": files,
+            "download_gb": round(sum(int(f.get("size") or 0) for f in files) / 1e9, 1),
+            "vram_gb": max([packs[p].get("vram_gb") or 0 for p in order], default=0),
+            "needs_token": any(f.get("needs_token") for f in files), "node_packs": list(dict.fromkeys(nodes)),
+            "video": any(w.get("task") in VIDEO_TASKS for w in wfs) or any(packs[p].get("kind") == "video" for p in order)}
+
+
+def catalog_search(cat, query="", task=None, category=None, nsfw=None, max_vram_gb=None, kind=None, limit=20):
+    """Starter workflows and packs (not shared components) matching every word of `query` and the
+    filters, best first; when no entry has every word, the ones matching most words."""
+    words = [w for w in re.split(r"[\s,]+", (query or "").lower()) if w]
+    rows = []
+    for typ, it in [("workflow", w) for w in cat.get("workflows") or []] + [("pack", p) for p in cat.get("packs") or []]:
+        it_kind = "workflow" if typ == "workflow" else it.get("kind")
+        if it.get("component") or it_kind == "component" or (kind and kind != it_kind):
+            continue
+        if (task and it.get("task") != task) or (category and category not in (it.get("categories") or [])):
+            continue
+        if nsfw is not None and bool(it.get("nsfw")) != bool(nsfw):
+            continue
+        needs = catalog_needs(cat, [it["id"]])
+        if max_vram_gb and needs["vram_gb"] and needs["vram_gb"] > max_vram_gb:
+            continue
+        title = it["title"].lower()
+        hay = " ".join([title, it["id"], it.get("summary") or "", it.get("why") or "", it.get("base_model") or "",
+                        it.get("task") or "", it_kind or "", " ".join(it.get("categories") or []),
+                        " ".join(it.get("trigger_words") or [])]).lower()
+        hits = [w for w in words if w in hay]
+        score = sum(3 if w in title else 2 if w in it["id"] else 1 for w in hits) + (1.5 if typ == "workflow" else 0)
+        rows.append((len(hits), score - (it.get("rank") or 999) / 1000, typ, it, needs))
+    best = max((r[0] for r in rows), default=0)
+    rows = [r for r in rows if r[0] == len(words)] or ([r for r in rows if r[0] == best] if best else [])
+    rows.sort(key=lambda r: -r[1])
+    return [{"id": it["id"], "type": typ, "title": it["title"], "kind": it.get("task") if typ == "workflow" else it.get("kind"),
+             "base_model": it.get("base_model") or "", "nsfw": bool(it.get("nsfw")), "categories": it.get("categories") or [],
+             "vram_gb": needs["vram_gb"], "download_gb": needs["download_gb"], "needs_civitai_key": needs["needs_token"],
+             "node_packs": len(needs["node_packs"]), "summary": (it.get("summary") or "")[:240]}
+            for _, _, typ, it, needs in rows[:limit]]
+
+
+def apply_install(a):
+    """--install IDS: set --min-vram and --download-gb from the catalog unless given."""
+    ids = split_ids(getattr(a, "install", None))
+    if not ids:
+        return None
+    needs = catalog_needs(catalog_data(), ids)
+    if not a.min_vram and needs["vram_gb"]:
+        a.min_vram = int(math.ceil(needs["vram_gb"]))
+    if a.download_gb is None:
+        a.download_gb = needs["download_gb"] or 20.0
+    return needs
+
+
+def describe_setup(needs):
+    return (f"Sets up {', '.join(needs['ids'])}: {len(needs['files'])} file(s), {needs['download_gb']:g} GB to download"
+            + (f", wants {needs['vram_gb']:g} GB VRAM" if needs["vram_gb"] else "")
+            + (f", {len(needs['node_packs'])} node pack(s)" if needs["node_packs"] else "")
+            + (". Needs your Civitai API key in the dashboard's Settings." if needs["needs_token"] else "."))
+
+
 # ---- ranking -----------------------------------------------------------------------------------
 def _typical(values):
     """The score a healthy host of this GPU model gets: the upper quartile (or best of a few)."""
@@ -626,13 +760,17 @@ def offer_row(o):
 
 def cmd_offers(a):
     needs = apply_workflow(a)
+    setup = apply_install(a)
     offers, hidden = search_offers(a)
     offers = offers[: a.limit]
     if a.json:
-        print(json.dumps({"needs": needs, "offers": [offer_row(o) for o in offers], "hidden": hidden}, indent=1))
+        print(json.dumps({"needs": needs, "setup": setup and {k: v for k, v in setup.items() if k != "files"},
+                          "offers": [offer_row(o) for o in offers], "hidden": hidden}, indent=1))
         return
     if needs:
         print(describe_needs(needs) + "\n")
+    if setup:
+        print(describe_setup(setup) + "\n")
     print(f"{'ID':>9}  {'GPU':<16} {'VRAM':>4} {'$/H':>7} {'DL/UL $/TB':>11} {'POWER':>5} {'IMG/H':>7} {'IMG/$':>7} {'HOST':>5} {'NET':>5}  WHERE")
     for o in offers:
         print(f"{o['id']:>9}  {o['gpu_name'][:16]:<16} {o['gpu_ram'] / 1024:>3.0f}G {o['_cost_h']:>7.3f} {o['_dl_tb']:>5.1f}/{o['_ul_tb']:<5.1f} "
@@ -650,29 +788,48 @@ def cmd_offers(a):
 def find_volume():
     vols = vast("show", "volumes", check=False) or []
     for v in vols if isinstance(vols, list) else []:
-        if (v.get("label") or v.get("volume_label") or "") in (VOLUME_LABEL, LEGACY_VOLUME_LABEL):
+        if (v.get("label") or v.get("volume_label") or "") == VOLUME_LABEL:
             return v
     return None
+
+
+def instance_env(bundles=None, install=None, sets=()):
+    """Env vars for a new instance: install from this repo (even if the Vast template still points at
+    another one), bundles and catalog ids to set up at boot, then KEY=VALUE extras (which win)."""
+    env = {}
+    if template_env("PROVISIONING_SCRIPT") != PROVISIONING_URL:
+        env["PROVISIONING_SCRIPT"] = PROVISIONING_URL
+    if template_env("COMFORTABLE_REPO") not in ("", REPO):
+        env["COMFORTABLE_REPO"] = REPO
+    if bundles:
+        names = [n.strip() for n in (bundles.split(",") if isinstance(bundles, str) else bundles) if n and n.strip()]
+        if any(re.search(r"[\s'\"]", n) for n in names):
+            die("bundle names with spaces or quotes can't be passed to a new instance: use the bundle ids")
+        env["COMFORTABLE_BUNDLES"] = ",".join(names)
+    if install:
+        ids = split_ids(install)
+        bad = [i for i in ids if not re.fullmatch(r"[\w.\-]+", i)]
+        if bad:
+            die(f"not catalog ids: {', '.join(bad)}")
+        catalog_needs(catalog_data(), ids)  # unknown ids fail here, before anything is rented
+        env["COMFORTABLE_INSTALL"] = ",".join(ids)
+    for kv in sets or []:
+        k, _, v = kv.partition("=")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k) or not v or re.search(r"[\s'\"]", v):
+            die(f"--set expects KEY=VALUE without spaces or quotes, got {kv!r}")
+        env[k] = v
+    return env
 
 
 def cmd_rent(a):
     needs = apply_workflow(a)
     if needs:
         print(describe_needs(needs) + "\n")
+    setup = apply_install(a)
+    if setup:
+        print(describe_setup(setup) + "\n")
     t = template()
-    env = {}
-    # Install from this repo even if the Vast template still points at another one (--set can still override).
-    if template_env("PROVISIONING_SCRIPT") != PROVISIONING_URL:
-        env["PROVISIONING_SCRIPT"] = PROVISIONING_URL
-    if any(template_env(k) not in ("", REPO) for k in ("COMFORTABLE_REPO", "XTRA_REPO")):
-        env["COMFORTABLE_REPO"] = REPO
-    if a.bundles:
-        env["COMFORTABLE_BUNDLES"] = a.bundles
-    for kv in a.set or []:
-        k, _, v = kv.partition("=")
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k) or not v or re.search(r"\s", v):
-            die(f"--set expects KEY=VALUE without spaces, got {kv!r}")
-        env[k] = v
+    env = instance_env(a.bundles, a.install, a.set)
     extra = []
     machine = None
     if a.keep_models:
@@ -938,9 +1095,7 @@ def cmd_api(a):
     print(json.dumps(r, indent=1))
 
 
-# Each log by its current name, then the name it had before the rename (older instances).
-LOGS = (("/var/log/provisioning_comfortable.log", "/var/log/provisioning_comfy_xtra.log"),
-        ("/var/log/comfortable.log", "/var/log/comfy-xtra.log"))
+LOGS = (("/var/log/provisioning_comfortable.log",), ("/var/log/comfortable.log",))
 
 
 def cmd_logs(a):
@@ -965,6 +1120,35 @@ def add_offer_args(p):
     p.add_argument("--max-upload-per-tb", type=float, default=MAX_UPLOAD_PER_TB,
                    help=f"hide hosts charging more than this per TB uploaded (default ${MAX_UPLOAD_PER_TB:g})")
     p.add_argument("--refresh", action="store_true", help="re-read your benchmarks and host verdicts now")
+    p.add_argument("--install", metavar="IDS", help="catalog packs / starter workflows, comma separated (`comfortable catalog`): "
+                                                    "sets --min-vram and --download-gb; rent also installs them at boot")
+
+
+def cmd_catalog(a):
+    cat = catalog_data()
+    if a.ids:
+        needs = catalog_needs(cat, a.ids)
+        if a.json:
+            print(json.dumps(needs, indent=1))
+            return
+        print(describe_setup(needs))
+        for f in needs["files"]:
+            print(f"  {f['category'] + '/' + f['filename']:<78} {int(f.get('size') or 0) / 1e9:>6.2f} GB  {f['pack']}"
+                  + ("  (Civitai key)" if f.get("needs_token") else ""))
+        return
+    hits = catalog_search(cat, " ".join(a.query or []), task=a.task, category=a.category,
+                          nsfw={"only": True, "no": False}.get(a.nsfw), max_vram_gb=a.max_vram, kind=a.kind, limit=a.limit)
+    if a.json:
+        print(json.dumps(hits, indent=1))
+        return
+    if not hits:
+        print("Nothing matches. Categories: " + ", ".join(c["id"] for c in cat.get("categories") or []))
+        return
+    for h in hits:
+        print(f"{h['id']:<30} {h['type']:<8} {h['kind'] or '':<11} {h['vram_gb'] or '?':>3} GB VRAM {h['download_gb']:>6.1f} GB"
+              f"{'  NSFW' if h['nsfw'] else '      '}  {h['title'][:60]}")
+    print(f"\nCatalog {cat.get('version')}. Install on an instance from the dashboard, or rent with them: "
+          "comfortable rent --install ID,ID")
 
 
 def main():
@@ -1008,10 +1192,23 @@ def main():
     p.add_argument("--data", "-d", help="JSON body"); p.add_argument("--timeout", type=int, default=60); p.set_defaults(fn=cmd_api)
     p = sub.add_parser("logs", help="provisioning and dashboard logs")
     p.add_argument("id", nargs="?"); p.add_argument("--lines", type=int, default=60); p.set_defaults(fn=cmd_logs)
+    p = sub.add_parser("catalog", help="find starter workflows and model packs (the dashboard's Suggested by AI)")
+    p.add_argument("query", nargs="*", help="words to look for, e.g. nsfw video, or pose")
+    p.add_argument("--ids", help="show what these ids install instead (files, sizes, VRAM)")
+    p.add_argument("--task", help="t2i, edit, inpaint, style, pose, upscale, i2v, t2v, flf2v, lipsync, audio, 3d, ...")
+    p.add_argument("--category", help="nsfw-video, nsfw-photo, hentai, anime, video, artist, stylize, pose, upscale, ...")
+    p.add_argument("--kind", help="workflow, checkpoint, lora, video, base, controlnet, upscaler, tool, embedding")
+    p.add_argument("--nsfw", choices=("only", "no"), help="only NSFW entries, or none")
+    p.add_argument("--max-vram", type=int, help="fits in this many GB of VRAM")
+    p.add_argument("--limit", type=int, default=25); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_catalog)
     a = ap.parse_args()
-    if getattr(a, "download_gb", 0) is None and not getattr(a, "workflow_for", None):
+    if getattr(a, "download_gb", 0) is None and not getattr(a, "workflow_for", None) and not getattr(a, "install", None):
         a.download_gb = 20.0
-    a.fn(a)
+    try:
+        a.fn(a)
+    except CliError as e:
+        print(f"error: {e.message}", file=sys.stderr)
+        sys.exit(e.code)
 
 
 if __name__ == "__main__":

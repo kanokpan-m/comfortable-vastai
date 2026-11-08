@@ -85,6 +85,44 @@ s, t_hf = j("POST", "/api/downloads", json={"candidate": hf, "category": "vae", 
 check("download queued", s == 200 and t_hf["status"] in ("queued", "starting", "downloading"), t_hf)
 s, d = j("POST", "/api/downloads", json={"url": "https://huggingface.co/madebyollin/taesd/resolve/main/diffusion_pytorch_model.safetensors", "category": "bogus"})
 check("download rejects bad category", s == 400, d)
+
+# "Suggested by AI" catalog and starter workflows (the 31 MB anime upscaler is the small pack under test)
+s, cat = j("GET", "/api/catalog")
+check("catalog lists packs, categories and starters", s == 200 and len(cat["packs"]) > 50 and len(cat["workflows"]) >= 10 and len(cat["categories"]) >= 10,
+      str(cat)[:300])
+check("catalog packs carry install state", s == 200 and all("state" in p and "missing_bytes" in p["state"] for p in cat["packs"]), "")
+s, d = j("POST", "/api/catalog/packs/upscale-anime/install")
+check("catalog pack install queues its files", s == 200 and d["packs"] == ["upscale-anime"] and len(d["tasks"]) == 1, d)
+s, saved = j("POST", "/api/catalog/packs/upscale-anime/save", json={"auto_install": False})
+check("catalog pack saved as a bundle", s == 200 and saved["bundle"]["origin"] == "catalog:upscale-anime" and saved["added"] == 1, saved)
+s, again = j("POST", "/api/catalog/packs/upscale-anime/save")
+check("saving a pack again reuses its bundle", s == 200 and again["bundle"]["id"] == saved["bundle"]["id"] and again["linked"] == 1, again)
+s, wf_doc = j("GET", "/api/catalog/workflows/upscale-fast")
+check("starter workflow graph", s == 200 and any(n.get("type") == "UpscaleModelLoader" for n in wf_doc["graph"]["nodes"]), str(wf_doc)[:200])
+s, st = j("GET", "/api/catalog/workflows/upscale-fast/status")
+check("starter status without ComfyUI", s == 200 and st["files"] and st["comfy"] is False and st["ready"] is False, st)
+s, d = j("GET", "/api/catalog/workflows/nope")
+check("unknown starter is 404", s == 404, d)
+# plan / one-call install / progress (what the MCP server and COMFORTABLE_INSTALL use)
+s, plan = j("POST", "/api/catalog/plan", json={"ids": ["upscale-fast", "upscale-anime"]})
+names = {f["filename"]: f for f in plan.get("files", [])} if s == 200 else {}
+check("catalog plan lists files, sizes and disk", s == 200 and {"4x-UltraSharpV2.safetensors", "2x-AnimeSharpV4_RCAN.safetensors"} <= set(names)
+      and plan["bytes_total"] > 100e6 and plan["disk_free"] > 0 and plan["workflows"][0]["id"] == "upscale-fast", plan)
+check("catalog plan sees the pack being downloaded", s == 200 and any(f["downloading"] or f["installed"]
+                                                                      for n, f in names.items() if "AnimeSharp" in n), names)
+s, d = j("POST", "/api/catalog/plan", json={"ids": ["upscale-fast", "nope"]})
+check("catalog plan rejects unknown ids", s == 404 and "nope" in d.get("error", ""), d)
+s, d = j("POST", "/api/catalog/plan", json={})
+check("catalog plan needs ids", s == 400, d)
+s, inst = j("POST", "/api/catalog/install", json={"ids": ["upscale-anime"], "nodes": False})
+check("catalog install reuses the running download", s == 200 and inst["packs"] == ["upscale-anime"] and len(inst["tasks"]) == 1
+      and inst["node_packs"] == {}, inst)
+s, prog = j("GET", "/api/catalog/progress", params={"ids": inst["tasks"][0]["id"]} if s == 200 else None)
+check("catalog progress", s == 200 and len(prog["tasks"]) == 1 and prog["boot"] is None and prog["node_queue"] is None, prog)
+s, d = j("GET", "/api/catalog/nodes", params={"q": "impact"})
+check("node pack search without ComfyUI-Manager is a clear error", s == 422 and "Manager" in d.get("error", ""), d)
+s, wsaved = j("POST", "/api/catalog/workflows/upscale-fast/save")
+check("starter saved as one bundle", s == 200 and wsaved["bundle"]["id"] == "wf-upscale-fast" and wsaved["added"] + wsaved["linked"] == 1, wsaved)
 deadline = time.time() + 180
 while time.time() < deadline:
     s, tasks = j("GET", "/api/downloads")
@@ -190,9 +228,19 @@ for chunk in r.iter_content(chunk_size=None):
 r.close()
 check("SSE snapshot", first.startswith(b"event: snapshot") and b'"downloads"' in first, first[:200])
 
+# catalog pack after its download finished
+s, cat = j("GET", "/api/catalog")
+up = next((p for p in cat.get("packs", []) if p["id"] == "upscale-anime"), {})
+check("installed catalog pack shows complete", (up.get("state") or {}).get("complete") and (up.get("state") or {}).get("bundle_id"), up.get("state"))
+
 # cleanup
 j("DELETE", f"/api/library/{item['id']}")
 j("DELETE", f"/api/bundles/{b['id']}")
+j("DELETE", f"/api/bundles/{saved['bundle']['id']}")
+j("DELETE", "/api/bundles/wf-upscale-fast")
+for i in j("GET", "/api/library")[1]:
+    if i.get("origin") in ("catalog:upscale-anime", "catalog:upscale-photo"):
+        j("DELETE", f"/api/library/{i['id']}")
 s, lib = j("GET", "/api/library")
 check("library delete", all(i["id"] != item["id"] for i in lib), lib)
 

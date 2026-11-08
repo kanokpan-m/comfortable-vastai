@@ -1,0 +1,190 @@
+{
+ "workflow": "interpolate",
+ "graph_sha256": "71b672c8cb85f0005919b17d5688550207ab630f93c76423ed6bb0f13456bc69",
+ "frontend": "1.58.5",
+ "prompt": {
+  "4": {
+   "inputs": {
+    "file": "white_armored_warrior.mp4",
+    "video-preview": ""
+   },
+   "class_type": "LoadVideo",
+   "_meta": {
+    "title": "Load Video",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "7": {
+   "inputs": {
+    "filename_prefix": "video/ComfyUI",
+    "format": "auto",
+    "format.codec": "auto",
+    "codec": "auto",
+    "video": [
+     "16:5",
+     0
+    ]
+   },
+   "class_type": "SaveVideo",
+   "_meta": {
+    "title": "Save Video",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:1": {
+   "inputs": {
+    "model_name": "film_net_fp16.safetensors"
+   },
+   "class_type": "FrameInterpolationModelLoader",
+   "_meta": {
+    "title": "Load Frame Interpolation Model",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:2": {
+   "inputs": {
+    "multiplier": [
+     "16:9",
+     0
+    ],
+    "interp_model": [
+     "16:1",
+     0
+    ],
+    "images": [
+     "16:3",
+     0
+    ]
+   },
+   "class_type": "FrameInterpolate",
+   "_meta": {
+    "title": "Run Frame Interpolation Model",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:5": {
+   "inputs": {
+    "fps": [
+     "16:10",
+     0
+    ],
+    "bit_depth": "auto",
+    "color_space": "sRGB",
+    "chroma_subsampling": "auto",
+    "codec": "none",
+    "images": [
+     "16:2",
+     0
+    ],
+    "audio": [
+     "16:3",
+     1
+    ]
+   },
+   "class_type": "CreateVideo",
+   "_meta": {
+    "title": "Create Video",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:9": {
+   "inputs": {
+    "value": 2
+   },
+   "class_type": "PrimitiveInt",
+   "_meta": {
+    "title": "Int (Multiplier)",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:10": {
+   "inputs": {
+    "switch": [
+     "16:13",
+     0
+    ],
+    "on_false": [
+     "16:3",
+     2
+    ],
+    "on_true": [
+     "16:11",
+     0
+    ]
+   },
+   "class_type": "ComfySwitchNode",
+   "_meta": {
+    "title": "If/Else Switch",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:13": {
+   "inputs": {
+    "value": true
+   },
+   "class_type": "PrimitiveBoolean",
+   "_meta": {
+    "title": "Boolean (Apply multiplier to FPS?)",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:3": {
+   "inputs": {
+    "video": [
+     "4",
+     0
+    ]
+   },
+   "class_type": "GetVideoComponents",
+   "_meta": {
+    "title": "Get Video Components",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  },
+  "16:11": {
+   "inputs": {
+    "expression": "min(abs(b), 16) * a",
+    "values.a": [
+     "16:3",
+     2
+    ],
+    "values.b": [
+     "16:9",
+     0
+    ]
+   },
+   "class_type": "ComfyMathExpression",
+   "_meta": {
+    "title": "Math Expression",
+    "cnr_id": "comfy-core",
+    "ver": "0.19.3"
+   }
+  }
+ },
+ "controls": [
+  {
+   "node": "16:9",
+   "input": "value",
+   "label": "multiplier"
+  },
+  {
+   "node": "16:13",
+   "input": "value",
+   "label": "enable_fps_multiplier"
+  },
+  {
+   "node": "16:1",
+   "input": "model_name",
+   "label": "model_name"
+  }
+ ]
+}

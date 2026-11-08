@@ -17,7 +17,7 @@ WEB_DIRECTORY = "./web"
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-UPSTREAM = (os.environ.get("COMFORTABLE_DASHBOARD_URL") or os.environ.get("XTRA_DASHBOARD_URL") or "http://127.0.0.1:17890").rstrip("/")
+UPSTREAM = (os.environ.get("COMFORTABLE_DASHBOARD_URL") or "http://127.0.0.1:17890").rstrip("/")
 HOP_HEADERS = {"connection", "keep-alive", "transfer-encoding", "content-length", "content-encoding", "host", "upgrade"}
 _session = None
 

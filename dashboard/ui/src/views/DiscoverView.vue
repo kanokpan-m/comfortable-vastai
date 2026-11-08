@@ -84,7 +84,7 @@ function openItem(it) {
     <ul v-if="source === 'civitai'" class="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] sm:gap-3">
       <li v-for="it in items" :key="`${it.model_id}`">
         <button class="group flex w-full flex-col overflow-hidden rounded-xl border border-subtle bg-panel text-left transition-colors hover:border-border" @click="openItem(it)">
-          <ModelThumb :src="it.preview" :mature="it.preview_mature" :category="it.category" :alt="it.name" class="aspect-[4/5] w-full">
+          <ModelThumb :src="it.preview" :mature="it.preview_mature" :category="it.category" :alt="it.name" :item="it" class="aspect-[4/5] w-full">
             <div class="absolute inset-x-0 top-0 flex justify-between gap-1 p-2">
               <Tag class="bg-black/60 text-white backdrop-blur">{{ it.type }}</Tag>
               <span v-if="inLibrary(it)" class="flex items-center gap-1 rounded bg-black/60 px-1.5 text-[11px] leading-5 text-ok backdrop-blur"><BookmarkCheck class="size-3" /> Saved</span>

@@ -66,8 +66,41 @@ window.addEventListener("message", async (e) => {
   } else if (type === "comfortable:reload") {
     // After new node packs: ComfyUI was restarted, reload so their nodes and UI appear.
     location.reload();
+  } else if (type === "comfortable:open-workflow") {
+    // A starter workflow from the Workflows screen: open it in a new workflow tab.
+    await openWorkflow(e.data.workflow, e.data.name);
   }
 });
+
+async function openWorkflow(graph, name) {
+  if (!graph) return;
+  try {
+    await app.loadGraphData(graph, true, true, name || "Comfortable starter");
+    app.extensionManager?.toast?.add({ severity: "success", summary: "Comfortable", detail: `Opened ${name || "the workflow"}`, life: 4000 });
+  } catch (err) {
+    console.warn("[Comfortable] could not open the workflow", err);
+    app.extensionManager?.toast?.add({ severity: "error", summary: "Comfortable", detail: `Couldn't open ${name || "the workflow"}: ${err}`, life: 9000 });
+  }
+}
+
+// Opened from the dashboard as <ComfyUI>/?comfortable_open=<workflow id>: load that starter workflow
+// once ComfyUI has restored its own tabs, then drop the parameter so a reload doesn't open it again.
+async function openFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get("comfortable_open");
+  if (!id) return;
+  params.delete("comfortable_open");
+  history.replaceState(null, "", location.pathname + (params.toString() ? `?${params}` : "") + location.hash);
+  try {
+    const res = await fetch(`${BASE}api/catalog/workflows/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const wf = await res.json();
+    await new Promise((r) => setTimeout(r, 1500));
+    await openWorkflow(wf.graph, wf.title);
+  } catch (err) {
+    console.warn("[Comfortable] starter workflow not found", id, err);
+  }
+}
 
 // Auto-stop warning, shown over ComfyUI.
 function showBanner(status) {
@@ -116,6 +149,7 @@ app.registerExtension({
       },
     });
     listen();
+    openFromUrl();
   },
   async afterConfigureGraph(missingNodeTypes) {
     const missing = (missingNodeTypes || []).map((m) => (typeof m === "string" ? m : m?.type)).filter(Boolean);

@@ -1,102 +1,124 @@
 ---
 name: comfortable
-description: Rent, check, tunnel into, fix workflows on, stop and destroy Vast.ai GPU instances running the user's Comfortable template (formerly Comfy-Xtra; Vast template "Comfortable", id 733467). Use when the user wants to rent a GPU for ComfyUI, asks what their Vast instance is doing, wants the dashboard locally, wants a workflow checked for missing models/nodes, wants to keep models between instances, or compares GPU value.
+description: Set up, run and manage ComfyUI on rented Vast.ai GPUs with the user's Comfortable stack (Vast template "Comfortable" id 733467, the Comfortable dashboard and ComfyUI tab, the `comfortable` MCP server and CLI). Use it whenever the user wants ComfyUI ready for something - a checkpoint, LoRA, video model, custom node pack or a whole workflow (image/text to video, first/last frame, lip sync, NSFW photo/video/hentai, pose transfer, ControlNet, inpainting, upscaling, artist or style looks, image edit, new camera angles, background removal, image to 3D, music) installed correctly and fast; wants a GPU found, rented, checked, stopped or destroyed; asks what their instance is doing or costing; wants a workflow checked or fixed for missing models or nodes; works with bundles, the "Suggested by AI" catalog or starter workflows; or changes the comfortable-vastai repo (catalog, database, dashboard). Use it even when they only say "get DaSiWa running" or "set me up for Wan 2.2 on a 4090". Not for chatting with an LLM on Vast (vast-llm skill).
 ---
 
-# Comfortable on Vast.ai (formerly Comfy-Xtra)
+# Comfortable: ComfyUI on Vast.ai
 
-All actions go through `comfortable.py` in this skill's folder (a copy of `tools/comfortable.py` from the kanokpan-m/comfortable-vastai repo).
-Run it with the Python that has the `vastai` package installed (`pip install vastai`; the API key is set
-with `vastai set api-key`). On Windows, plain `python` may be the Microsoft Store stub; use the full path of the
-Python install that owns `vastai`. It reaches the instance over SSH, so the user's SSH key must be on vast.ai.
+The user's own stack, repo `kanokpan-m/comfortable-vastai` (checked out at
+`D:\Projects\Apps\comfortable-vastai` on their PC). An instance rented with the Vast template
+"Comfortable" provisions ComfyUI plus the **Comfortable dashboard**: model library and bundles,
+a download queue with checksums, a fixer for missing models and node packs, the curated
+**"Suggested by AI" catalog** (model packs + starter workflows with every model selected), host
+health check, GPU benchmark, gallery, auto-stop. A **Comfortable tab** inside ComfyUI shows the
+fixer. The usual job: get the user from an idea ("NSFW image to video") to a ComfyUI tab with the
+right workflow open and every file in place, spending as little money and waiting as possible.
 
-```
-python comfortable.py status [ID] [--json]      # instances + dashboard, ComfyUI, GPU use, disk, host health
-python comfortable.py offers [--gpu RTX_5090,RTX_4090] [--max-price 0.8] [--min-vram 24] [--rank value|speed] [--for WORKFLOW.json] [--disk 100] [--json]
-python comfortable.py rent --offer ID [--disk 100] [--bundles a,b] [--keep-models] [--set KEY=VALUE] --yes [--dry-run]
-python comfortable.py needs WORKFLOW.json       # VRAM and download size a workflow needs (no instance required)
-python comfortable.py hosts [--forget ID|all]   # machines skipped after failing the host check
-python comfortable.py tunnel [ID]               # dashboard http://localhost:17890, ComfyUI http://localhost:17891 (blocks; run in background)
-python comfortable.py fix WORKFLOW.json [ID]    # missing models / custom nodes and where each would come from
-python comfortable.py api PATH [ID] [-X POST -d JSON]   # any dashboard route, JSON out
-python comfortable.py logs [ID]
-python comfortable.py stop|start|destroy ID
-```
+## Which interface
 
-## Renting safely (read before every rental)
+1. **MCP tools `mcp__comfortable__*`** when they are listed: structured results, one-call batch
+   installs, offline catalog answers, and renting guarded by `confirm`. Tool-by-tool notes,
+   setup and troubleshooting: [references/mcp.md](references/mcp.md).
+2. **The CLI** otherwise: `python D:\Projects\Apps\comfortable-vastai\tools\comfortable.py <cmd>`
+   (same ranking and rent logic; use the Python that has `vastai` installed; on Windows plain
+   `python` may be the Store stub). Commands and the rent procedure: [references/cli.md](references/cli.md).
+3. **Any dashboard route**: MCP `call_dashboard_api` or `comfortable.py api PATH`. Architecture,
+   ports, logs, env vars and routes: [references/ecosystem.md](references/ecosystem.md).
 
-Renting spends the user's money. Follow this every time, even when the user says "just rent one":
+If the user wants the MCP server and it isn't loaded, offer to register it (references/mcp.md).
 
-1. **Search with the user's real numbers.** Use their disk size (`--disk`), their workflow (`--for`) or ask
-   what they'll run, and their budget (`--max-price`). Don't invent `--download-gb` or `--hours`: they decide
-   how much the download fee weighs. If you must guess, say what you assumed.
-2. **Show before you rent.** For the top 2-3 offers give: offer ID, GPU + VRAM, location, $/h (GPU + disk),
-   **download price in $/TB**, network speed, host score, and which you'd pick and why. Wait for the user to
-   pick one in chat.
-3. **Rent exactly that offer:** `rent --offer <ID> --disk <GB> --yes`. If it's gone, `--offer` rents nothing.
-   Then search again and **ask again**. Never let the helper fall through to the "next best" offer the user
-   hasn't seen, and don't use `--auto-swap` unless the user asked for it (it rents unseen hosts).
-4. **Bandwidth is not a footnote.** Hosts set their own download price: most charge $0-5/TB, a few $40+/TB.
-   Models are re-downloaded on every new instance (about 20 GB for a MiniMax/Krea set, 60 GB+ for video
-   stacks), so it's a recurring cost. The helper hides hosts over $10/TB; raise `--max-download-per-tb` only
-   if the user asks.
-5. **Upload and power count too.** Upload ($/TB) is what viewing/downloading outputs and backups cost; hosts
-   over $20/TB upload are hidden. POWER shows a host's power cap vs. a full card (most RTX 5090s run 450-520 W
-   of 575-600); speed estimates already include it. Mention both when recommending.
-6. **If the user says stop, stop first:** kill the running `rent`, destroy (or stop, if it holds their data)
-   what was just rented, confirm with `status`, then explain.
+## Recipes
 
-**What went wrong once (2026-10-16), so it doesn't again:** the user asked for "at least a 4090, 50 GB disk".
-The best offer (RTX 4090, Bulgaria, $0.53/h) was taken a minute later, and `rent` (no `--offer`) silently took
-the next one: an RTX 5090 in Estonia charging **$40/TB** to download. It ranked "best value" only because the
-fee was spread over an assumed 4-hour session, and the $/TB was never shown. The user had to stop it. Cheaper,
-faster hosts at $1-4/TB were available. Hence rules 2-4 and the `--offer` flag.
+### Set something up on a running instance
+1. `status` first: GPU and VRAM, free disk, whether ComfyUI is busy, running downloads, whether
+   the Civitai key is set. Say in one line what you found.
+2. `find_setups` with the user's words; filter with `nsfw`, `category`, `max_vram_gb` (their GPU).
+   Prefer **starter workflows** (`type: workflow`): every model is already selected in every node.
+   Packs are for adding a model or LoRA to a workflow of their own. `get_setup` gives a starter's
+   how-to steps and a pack's recommended settings, trigger words and what it works with.
+3. `plan_install` and read its warnings before downloading tens of GB:
+   - Civitai key missing (most NSFW files need it): ask the user to paste their key into the
+     dashboard's Settings themselves, so it never lands in the chat.
+   - Not enough disk: an instance's disk can't be grown; free space or rent a bigger disk.
+   - VRAM short: offer a lighter alternative from `find_setups` or a bigger GPU.
+4. `install_setups` (starters are saved into ComfyUI's Workflows sidebar by default). Add
+   `save_as_bundle` + `auto_install_next_time` when they'll want it on every future instance.
+5. `install_progress(task_ids, wait_seconds=300)` until `finished`; report GB done, speed and ETA
+   briefly. A failed Civitai file is almost always the missing key (401) or a moved link.
+6. Node packs installed (`restart_needed`) → `restart_comfyui`. It refuses while a job runs;
+   `force` only after the user agrees to lose that job.
+7. `open_workflow` → give the link (or the sidebar path), the starter's steps and inputs, and the
+   settings that matter (steps, CFG, sampler, LoRA strength, trigger words).
 
-## Money facts measured on Vast (2026-10-16)
+### Rent a GPU for something
+1. Pin down what will run: `find_setups` ids, or `check_workflow` on their workflow file (works
+   offline: VRAM and download size).
+2. `find_gpu(for_setups=[...], disk_gb=..., max_price=..., hours=...)` with the user's real numbers:
+   disk = download size + 30-50 GB for outputs; hours = how long they'll really work (it spreads the
+   host's download fee). Say what you assumed.
+3. Show 2-3 offers: offer id, GPU + VRAM, location, real $/h, download and upload $/TB, power
+   share, images/hour (estimated when `speed_measured` is false), host score; recommend one and
+   why. Wait for the user to pick.
+4. `rent_gpu(offer_id, confirm=true)` only after a clear yes to that offer and price. It sets up
+   the `for_setups` at boot, so models download while the instance is still starting.
+5. `wait_for_instance` (call again while it says `waiting`). It connects when ready and reports
+   the host check; a `poor` or failed host is remembered and skipped from then on. Tell the user
+   and offer to destroy it and pick another offer together.
+6. `install_progress(wait_seconds=300)` to watch the boot install (`boot_install` shows node packs,
+   ComfyUI restart and the starters saved), then `open_workflow`.
 
-- Stopped instances keep paying for storage (about $0.40-1.80/day for 80 GB), possibly at a higher rate than
-  running. Recreating costs one model download (~$0.10 at $2-3/TB) plus a few minutes, and bundles + the fixer
-  restore models automatically. For breaks longer than ~6-8 hours, destroying (after a backup) is cheaper than
-  stopping; for short breaks, stopping is.
-- Interruptible (bid) instances are 35-40% cheaper but can be paused when outbid: fine for batch jobs, not for
-  interactive sessions.
-- Setup time is set by the host's network: 40 GB took 333 s at 1 Gbps and 74 s at 6.6 Gbps (single files top
-  out near 2.2 Gbps). Disk can't be resized: size it from `fix`/`needs` minimum (or maximum) + room for outputs.
-- Some hosts look fine idle and halve their speed under load (driver "reliability" clock limit); the host
-  check's 30 s load test marks those "poor". Offer to replace a poor host.
+### Make any workflow run
+`check_workflow` (a local file, JSON, or `comfyui_path` from `list_comfyui_workflows`) → explain
+what's missing and where each file would come from → `fix_workflow` → `install_progress` →
+`restart_comfyui` if node packs went in → tell them to reload the workflow. Gated Hugging Face files
+need the licence accepted on the site and an HF token in Settings. For files nothing found, use
+`search_models` and `add_model` with the exact filename and sub-folder the workflow expects
+(`WAN22/...`, `MiniMaxH3/...`): ComfyUI only finds a file at that path.
 
-## How to work
+### Add one model or node pack
+Look in the catalog first (`find_setups` with `kind`: lora, checkpoint, video, ...), then
+`search_models` (Civitai with type and base-model filters; Hugging Face repos; `hf_repo` lists a
+repo's files) → `add_model(url, category?, filename?, bundle_id?)` → `install_progress`. Node packs:
+`search_node_packs` → `install_node_packs` → `restart_comfyui`.
 
-- **Start by looking.** Run `status --json` to learn what is running before anything else. "Acknowledge the
-  current session" means this: report GPU, price, uptime-relevant state, whether ComfyUI is busy
-  (`api system` → `comfy.queue_remaining`, `gpus[0].util`), active downloads (`api downloads`) and host health.
-- **Money and destruction need a yes.** Renting, `start`, `stop` and `destroy` cost money or lose data. Show
-  the offer (see above) or the instance (ID, GPU, what's on it) and wait for the user's explicit go-ahead in
-  chat. `rent` without `--yes` prompts interactively, which you can't answer, so pass `--yes` only together
-  with `--offer` for the offer the user agreed to. Never destroy an instance you didn't just rent for a test
-  unless the user names it. Destroying deletes the instance's disk; a `--keep-models` volume survives.
-- **Picking a GPU.** `offers` applies the template's host-quality filters (reliability ≥ 0.98, ≥ 800 Mbps,
-  fast disk, no display attached, ≥ 32 GB RAM, CUDA ≥ 12.9), hides hosts scoring well below others with the
-  same GPU (power-limited or throttled; HOST column), hosts over $10/TB to download, and machines that failed
-  a host check in the last 30 days. $/H is GPU + disk plus the download fee spread over `--hours`; DL $/TB is
-  the host's download price. `--rank value` (default) = most images per dollar; `--rank speed` = fastest
-  within `--max-price`. IMG/H marked `~` is an estimate from a built-in speed table; unmarked numbers are the
-  user's own benchmarks. Suggest 16 GB for SDXL/Flux-fp8, 24 GB for Flux/Qwen-Image/Wan 14B fp8, 32 GB+ for
-  video. Offers change by the minute: re-run `offers` right before renting.
-- **After renting**, `rent` waits for the dashboard and the host check (about 2 minutes in all). A `poor` host
-  or one that never starts its container (stuck loading over 8 minutes) is remembered and skipped from then on;
-  without `--auto-swap` tell the user and offer to destroy it and pick another offer together.
-  The first rental of a GPU model the user hasn't benchmarked runs the 2-minute benchmark automatically
-  (`--no-bench` to skip), so later rankings use real numbers.
-- **Missing models or nodes.** `fix` shows what's missing, what's optional (switched-off nodes) and where each
-  file would come from. The fix itself runs inside ComfyUI (Comfortable tab) or by posting the `models` entries
-  (each carries its `fix`) and the pack ids from `fix --json` to
-  `api fix/apply -X POST -d '{"models": [...], "packs": [...]}'`. Prefer pointing the user to the Comfortable
-  tab: it shows sizes and asks before installing node packs. When testing, don't download big models (tens of
-  GB) unless the user asked: use small files to check paths.
-- **Keep models between instances.** `rent --keep-models` creates (first time) or links (afterwards) a Vast
-  local volume labelled `comfortable-models` (or `comfy-xtra-models`, made before the rename), mounted at `/mnt/models`. Local volumes are tied to one machine,
-  so later rentals must use that machine; if it has no free GPU, say so rather than renting elsewhere silently.
-- **Auto-stop.** `api settings -X PUT -d '{"auto_stop_minutes": 30}'` stops the instance after 30 idle
-  minutes (stopped instances only pay for storage).
-- Never print or paste the user's Vast API key, Mongo URI, HF/Civitai tokens or the portal token.
+### What's going on, what it costs, ending a session
+`status` (GPU use, ComfyUI queue and last error, downloads, money spent) or
+`list_instances(with_health=true)`. To end: stopping keeps paying for storage, destroying deletes the
+disk; for breaks over roughly 6-8 hours destroying (after backing up outputs) is usually cheaper, and
+bundles with auto-install bring the models back on the next instance. Money facts:
+[references/cli.md](references/cli.md#money-facts). Then `manage_instance(..., confirm=true)` once
+they say which.
+
+## Rules, and why
+
+- **Money and destruction need the user's yes to that exact action.** Renting, start, stop and
+  destroy cost money or delete data. Show the offer or instance first; never rent an offer they
+  haven't seen, never swap hosts on your own. On 2026-10-16 a rental fell through to an unseen host
+  charging $40/TB for downloads and the user had to stop it: that's why `rent_gpu` only takes
+  offers shown in this session, re-checks the price, and needs `confirm`.
+- **If the user says stop, stop**: cancel what's running, offer to destroy what was just rented,
+  confirm with `list_instances`, then explain.
+- **Don't pull ComfyUI from under a running job** (restart only when idle or with their OK).
+- **Secrets stay out of the chat**: never print or repeat the Vast API key, MongoDB URI, Hugging
+  Face / Civitai tokens or the portal token; keys go into the dashboard's Settings by the user.
+- **Content**: adult content is fine for this user and the catalog covers it. Decline real people's
+  likeness (celebrity or private-person LoRAs, face swaps of real people), anything sexual involving
+  minors or child-like characters, and Krea 2 "filter bypass" LoRAs (its licence asks to keep the
+  filter), with a one-line reason.
+- **Downloads are real**: plan before tens of GB; when testing or developing, use small files.
+- **Commits** in the repo only when asked, as `kanokpan-m` (see the user's CLAUDE.md).
+
+## Presenting results
+
+Keep it short; the user watches the same state in their dashboard. For setups: title, what it
+does, VRAM, download GB, Civitai key needed, NSFW. For offers: the table above. After an install:
+where to open it, the steps to use it, and the settings that matter. Give sizes in GB and costs
+in $/h; mention the ETA when something will take minutes.
+
+## Working on the repo itself
+
+Architecture, ports, logs, env vars and API routes: [references/ecosystem.md](references/ecosystem.md).
+Updating the catalog (new models, starters, publishing to MongoDB):
+[references/catalog.md](references/catalog.md). Database layout: `docs/database.md` in the repo.
+Tests: `python -m unittest tests/test_cli.py tests/test_fixer.py tests/test_store.py tests/test_mcp.py tests/test_starters.py tests/test_hub.py tests/test_create.py`,
+and `tests/api_test.py` against a local dashboard (README "Development").

@@ -4,11 +4,8 @@ from pathlib import Path
 
 
 def env(name, default=None):
-    """COMFORTABLE_<name>, else XTRA_<name>: templates made before the rename still set those."""
-    for key in (f"COMFORTABLE_{name}", f"XTRA_{name}"):
-        if os.environ.get(key):
-            return os.environ[key]
-    return default
+    """The COMFORTABLE_<name> environment variable, or default."""
+    return os.environ.get(f"COMFORTABLE_{name}") or default
 
 
 # COMFORTABLE_WORKSPACE lets the dashboard run outside a Vast instance for development.
@@ -21,8 +18,9 @@ STAGING_DIR = DATA_DIR / "staging"
 THUMB_DIR = DATA_DIR / "thumbs"
 LOCAL_DB = DATA_DIR / "comfortable.db"
 ENV_FILE = WORKSPACE / ".comfortable.env"
-LEGACY_DB = WORKSPACE / "model_manager.db"
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+# The curated "Suggested by AI" catalog shipped with this version (see catalog/README.md).
+CATALOG_DIR = Path(env("CATALOG_DIR", str(Path(__file__).resolve().parents[2] / "catalog")))
 
 # Optional Vast volume holding the model folders (survives destroying the instance).
 MODEL_VOLUME = Path(env("MODEL_VOLUME")) if env("MODEL_VOLUME") else None
@@ -32,10 +30,7 @@ PORT = int(env("PORT", "17890"))
 COMFY_URL = (os.environ.get("COMFYUI_API_BASE") or "http://127.0.0.1:18188").rstrip("/")
 
 MONGO_URI = (os.environ.get("MONGO_URI") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URL") or "").strip()
-# The database keeps its pre-rename name so every instance still shares the same library.
-MONGO_DB = env("MONGO_DB", "comfy_xtra")
-# Where the v1 dashboard's favorites/groups live (only differs when testing the migration).
-MONGO_V1_DB = env("MONGO_V1_DB", MONGO_DB)
+MONGO_DB = env("MONGO_DB", "comfortable")
 DISCORD_WEBHOOK_ENV = (os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or "").strip()
 
 # Vast injects these into every container; used for the instance cost readout.
@@ -56,8 +51,8 @@ CATEGORIES = [
     ("upscale_models", "Upscalers", True),
     ("embeddings", "Embeddings", True),
     ("clip_vision", "CLIP vision", True),
-    ("unet", "UNet (legacy)", False),
-    ("clip", "CLIP (legacy)", False),
+    ("unet", "UNet (old folder name)", False),
+    ("clip", "CLIP (old folder name)", False),
     ("audio_encoders", "Audio encoders", False),
     ("background_removal", "Background removal", False),
     ("configs", "Configs", False),
@@ -67,16 +62,19 @@ CATEGORIES = [
     ("geometry_estimation", "Geometry estimation", False),
     ("gligen", "GLIGEN", False),
     ("hypernetworks", "Hypernetworks", False),
+    ("ipadapter", "IP-Adapter", False),
     ("latent_upscale_models", "Latent upscalers", False),
     ("model_patches", "Model patches", False),
     ("optical_flow", "Optical flow", False),
     ("photomaker", "PhotoMaker", False),
+    ("sams", "SAM", False),
     ("style_models", "Style models", False),
+    ("ultralytics", "Ultralytics detectors", False),
     ("vae_approx", "VAE approx", False),
 ]
 CATEGORY_NAMES = [c[0] for c in CATEGORIES]
 
-# Names users (and the v1 dashboard) stored that are not real ComfyUI folders.
+# Folder names people (and Civitai) use that are not ComfyUI folders.
 CATEGORY_ALIASES = {
     "lora": "loras", "locon": "loras", "lycoris": "loras", "dora": "loras",
     "checkpoint": "checkpoints", "ckpt": "checkpoints",
@@ -86,6 +84,8 @@ CATEGORY_ALIASES = {
     "diffusion_model": "diffusion_models",
     "controlnets": "controlnet",
 }
+# Folders ComfyUI reads as one: a model in unet/ is found by the same loaders as diffusion_models/.
+SAME_FOLDER = {"unet": "diffusion_models", "clip": "text_encoders"}
 
 
 def normalize_category(value, default="loras"):
@@ -93,6 +93,16 @@ def normalize_category(value, default="loras"):
     if v in CATEGORY_NAMES:
         return v
     return CATEGORY_ALIASES.get(v, default)
+
+
+def canonical_category(value):
+    """The folder ComfyUI really uses for a category: unet -> diffusion_models, clip -> text_encoders."""
+    c = normalize_category(value, default="")
+    return SAME_FOLDER.get(c, c)
+
+
+def same_folder(a, b):
+    return bool(a and b) and canonical_category(a) == canonical_category(b)
 
 
 def staging_root(target):
@@ -106,23 +116,7 @@ def staging_root(target):
     return STAGING_DIR
 
 
-def migrate_legacy_names():
-    """Move files written before the Comfy-Xtra -> Comfortable rename to their new names, once.
-    Runs before the database is opened, so nothing has the old files open."""
-    moves = [(WORKSPACE / ".comfy_xtra", DATA_DIR), (WORKSPACE / ".comfy_xtra.env", ENV_FILE)]
-    moves += [(DATA_DIR / f"xtra.db{s}", DATA_DIR / f"comfortable.db{s}") for s in ("", "-wal", "-shm")]
-    if MODEL_VOLUME:
-        moves.append((MODEL_VOLUME / ".xtra-staging", MODEL_VOLUME / ".comfortable-staging"))
-    for old, new in moves:
-        if old.exists() and not new.exists():
-            try:
-                old.rename(new)
-            except OSError:
-                pass
-
-
 def ensure_dirs():
-    migrate_legacy_names()
     for d in (DATA_DIR, STAGING_DIR, THUMB_DIR, OUTPUT_DIR):
         d.mkdir(parents=True, exist_ok=True)
     for name in CATEGORY_NAMES:

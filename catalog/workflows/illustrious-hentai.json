@@ -1,0 +1,1832 @@
+{
+ "id": "c7216400-5920-49b9-acec-c4159c961295",
+ "revision": 0,
+ "last_node_id": 18,
+ "last_link_id": 30,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "MarkdownNote",
+   "pos": [
+    -500,
+    0
+   ],
+   "size": [
+    460,
+    470
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "title": "Read me",
+   "properties": {},
+   "widgets_values": [
+    "## Illustrious NSFW anime with hires fix and face detailer\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write Danbooru tags in the positive prompt (quality tags are already there). Add an artist tag, or select the **LoRA slot** and press **Ctrl+B** to turn it on, then pick any LoRA from *Suggested by AI → This artist*.\n2. Press **Run**: base image (832x1216), 1.5x hires pass through 2x-AnimeSharpV4, then the face detailer.\n3. For explicit detail add the NSFW detector kit and a second detailer pass.\n\n**Models:** WAI-illustrious-SDXL v17, 2x-AnimeSharpV4, face detector (Impact Subpack)\n**Settings:** Euler a, 25 steps, CFG 6 (hires 20 steps, denoise 0.4)"
+   ],
+   "widgets_values_named": {
+    "text": "## Illustrious NSFW anime with hires fix and face detailer\n\nStarter workflow from **Comfortable** (Workflows screen). Every model it uses was installed with it.\n\n1. Write Danbooru tags in the positive prompt (quality tags are already there). Add an artist tag, or select the **LoRA slot** and press **Ctrl+B** to turn it on, then pick any LoRA from *Suggested by AI → This artist*.\n2. Press **Run**: base image (832x1216), 1.5x hires pass through 2x-AnimeSharpV4, then the face detailer.\n3. For explicit detail add the NSFW detector kit and a second detailer pass.\n\n**Models:** WAI-illustrious-SDXL v17, 2x-AnimeSharpV4, face detector (Impact Subpack)\n**Settings:** Euler a, 25 steps, CFG 6 (hires 20 steps, denoise 0.4)"
+   },
+   "color": "#432",
+   "bgcolor": "#653"
+  },
+  {
+   "id": 2,
+   "type": "CheckpointLoaderSimple",
+   "pos": [
+    20,
+    50
+   ],
+   "size": [
+    210,
+    98
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "ckpt_name",
+     "name": "ckpt_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "ckpt_name"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "MODEL",
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ]
+    },
+    {
+     "localized_name": "CLIP",
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      2
+     ]
+    },
+    {
+     "localized_name": "VAE",
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      9,
+      10,
+      11,
+      12
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CheckpointLoaderSimple",
+    "models": [
+     {
+      "name": "WAI-Nsfw-Illustrious-17.safetensors",
+      "url": "https://civitai.com/api/download/models/2883731",
+      "directory": "checkpoints"
+     }
+    ]
+   },
+   "widgets_values": [
+    "WAI-Nsfw-Illustrious-17.safetensors"
+   ],
+   "widgets_values_named": {
+    "ckpt_name": "WAI-Nsfw-Illustrious-17.safetensors"
+   }
+  },
+  {
+   "id": 3,
+   "type": "LoraLoader",
+   "pos": [
+    20,
+    230
+   ],
+   "size": [
+    226.7671875,
+    126
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 4,
+   "inputs": [
+    {
+     "localized_name": "model",
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "localized_name": "clip",
+     "name": "clip",
+     "type": "CLIP",
+     "link": 2
+    },
+    {
+     "localized_name": "lora_name",
+     "name": "lora_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "lora_name"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "strength_model",
+     "name": "strength_model",
+     "type": "FLOAT",
+     "widget": {
+      "name": "strength_model"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "strength_clip",
+     "name": "strength_clip",
+     "type": "FLOAT",
+     "widget": {
+      "name": "strength_clip"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "MODEL",
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "localized_name": "CLIP",
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      6,
+      7,
+      8
+     ]
+    }
+   ],
+   "title": "LoRA slot (Ctrl+B to turn on)",
+   "properties": {
+    "Node name for S&R": "LoraLoader",
+    "models": [
+     {
+      "name": "cutesexyrobutts_style_illustrious_goofy.safetensors",
+      "url": "https://civitai.com/api/download/models/1068713",
+      "directory": "loras"
+     }
+    ]
+   },
+   "widgets_values": [
+    "cutesexyrobutts_style_illustrious_goofy.safetensors",
+    0.8,
+    0.8
+   ],
+   "widgets_values_named": {
+    "lora_name": "cutesexyrobutts_style_illustrious_goofy.safetensors",
+    "strength_model": 0.8,
+    "strength_clip": 0.8
+   }
+  },
+  {
+   "id": 4,
+   "type": "CLIPTextEncode",
+   "pos": [
+    400,
+    50
+   ],
+   "size": [
+    440,
+    220
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "clip",
+     "name": "clip",
+     "type": "CLIP",
+     "link": 6
+    },
+    {
+     "localized_name": "text",
+     "name": "text",
+     "type": "STRING",
+     "widget": {
+      "name": "text"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "CONDITIONING",
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      13,
+      15,
+      17
+     ]
+    }
+   ],
+   "title": "Positive prompt",
+   "properties": {
+    "Node name for S&R": "CLIPTextEncode"
+   },
+   "widgets_values": [
+    "masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, 1girl, solo, mature female, long hair, large breasts, nude, completely nude, navel, lying, on bed, on back, looking at viewer, smile, blush, bedroom, soft lighting, from above"
+   ],
+   "widgets_values_named": {
+    "text": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, 1girl, solo, mature female, long hair, large breasts, nude, completely nude, navel, lying, on bed, on back, looking at viewer, smile, blush, bedroom, soft lighting, from above"
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 5,
+   "type": "CLIPTextEncode",
+   "pos": [
+    400,
+    300
+   ],
+   "size": [
+    440,
+    160
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "clip",
+     "name": "clip",
+     "type": "CLIP",
+     "link": 7
+    },
+    {
+     "localized_name": "text",
+     "name": "text",
+     "type": "STRING",
+     "widget": {
+      "name": "text"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "CONDITIONING",
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      14,
+      16,
+      18
+     ]
+    }
+   ],
+   "title": "Negative prompt",
+   "properties": {
+    "Node name for S&R": "CLIPTextEncode"
+   },
+   "widgets_values": [
+    "bad quality, worst quality, worst detail, sketch, censor, mosaic censoring, bar censor, watermark, signature, artist name, bad anatomy, bad hands, extra digits, fewer digits, jpeg artifacts"
+   ],
+   "widgets_values_named": {
+    "text": "bad quality, worst quality, worst detail, sketch, censor, mosaic censoring, bar censor, watermark, signature, artist name, bad anatomy, bad hands, extra digits, fewer digits, jpeg artifacts"
+   },
+   "color": "#322",
+   "bgcolor": "#533"
+  },
+  {
+   "id": 6,
+   "type": "EmptyLatentImage",
+   "pos": [
+    880,
+    50
+   ],
+   "size": [
+    210,
+    106
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "width",
+     "name": "width",
+     "type": "INT",
+     "widget": {
+      "name": "width"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "height",
+     "name": "height",
+     "type": "INT",
+     "widget": {
+      "name": "height"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "batch_size",
+     "name": "batch_size",
+     "type": "INT",
+     "widget": {
+      "name": "batch_size"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "LATENT",
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      19
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EmptyLatentImage"
+   },
+   "widgets_values": [
+    832,
+    1216,
+    1
+   ],
+   "widgets_values_named": {
+    "width": 832,
+    "height": 1216,
+    "batch_size": 1
+   }
+  },
+  {
+   "id": 7,
+   "type": "KSampler",
+   "pos": [
+    880,
+    210
+   ],
+   "size": [
+    210,
+    262
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "model",
+     "name": "model",
+     "type": "MODEL",
+     "link": 3
+    },
+    {
+     "localized_name": "positive",
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 13
+    },
+    {
+     "localized_name": "negative",
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 14
+    },
+    {
+     "localized_name": "latent_image",
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 19
+    },
+    {
+     "localized_name": "seed",
+     "name": "seed",
+     "type": "INT",
+     "widget": {
+      "name": "seed"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "steps",
+     "name": "steps",
+     "type": "INT",
+     "widget": {
+      "name": "steps"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "cfg",
+     "name": "cfg",
+     "type": "FLOAT",
+     "widget": {
+      "name": "cfg"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sampler_name",
+     "name": "sampler_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "sampler_name"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "scheduler",
+     "name": "scheduler",
+     "type": "COMBO",
+     "widget": {
+      "name": "scheduler"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "denoise",
+     "name": "denoise",
+     "type": "FLOAT",
+     "widget": {
+      "name": "denoise"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "LATENT",
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      20
+     ]
+    }
+   ],
+   "title": "Base image",
+   "properties": {
+    "Node name for S&R": "KSampler"
+   },
+   "widgets_values": [
+    4242,
+    "randomize",
+    25,
+    6,
+    "euler_ancestral",
+    "normal",
+    1
+   ],
+   "widgets_values_named": {
+    "seed": 4242,
+    "control_after_generate": "randomize",
+    "steps": 25,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 1
+   }
+  },
+  {
+   "id": 8,
+   "type": "VAEDecode",
+   "pos": [
+    1220,
+    210
+   ],
+   "size": [
+    140,
+    46
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "samples",
+     "name": "samples",
+     "type": "LATENT",
+     "link": 20
+    },
+    {
+     "localized_name": "vae",
+     "name": "vae",
+     "type": "VAE",
+     "link": 9
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      21,
+      22
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEDecode"
+   }
+  },
+  {
+   "id": 9,
+   "type": "PreviewImage",
+   "pos": [
+    1220,
+    300
+   ],
+   "size": [
+    280,
+    380
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "link": 21
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "links": null
+    }
+   ],
+   "title": "Base image preview",
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   }
+  },
+  {
+   "id": 10,
+   "type": "UpscaleModelLoader",
+   "pos": [
+    20,
+    780
+   ],
+   "size": [
+    210,
+    58
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "model_name",
+     "name": "model_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "model_name"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "UPSCALE_MODEL",
+     "name": "UPSCALE_MODEL",
+     "type": "UPSCALE_MODEL",
+     "links": [
+      23
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UpscaleModelLoader",
+    "models": [
+     {
+      "name": "2x-AnimeSharpV4_RCAN.safetensors",
+      "url": "https://huggingface.co/Kim2091/2x-AnimeSharpV4/resolve/main/2x-AnimeSharpV4_RCAN.safetensors",
+      "directory": "upscale_models"
+     }
+    ]
+   },
+   "widgets_values": [
+    "2x-AnimeSharpV4_RCAN.safetensors"
+   ],
+   "widgets_values_named": {
+    "model_name": "2x-AnimeSharpV4_RCAN.safetensors"
+   }
+  },
+  {
+   "id": 11,
+   "type": "ImageUpscaleWithModel",
+   "pos": [
+    330,
+    780
+   ],
+   "size": [
+    233.5689453125,
+    46
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "upscale_model",
+     "name": "upscale_model",
+     "type": "UPSCALE_MODEL",
+     "link": 23
+    },
+    {
+     "localized_name": "image",
+     "name": "image",
+     "type": "IMAGE",
+     "link": 22
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      24
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "ImageUpscaleWithModel"
+   }
+  },
+  {
+   "id": 12,
+   "type": "ImageScaleBy",
+   "pos": [
+    330,
+    880
+   ],
+   "size": [
+    210,
+    82
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "image",
+     "name": "image",
+     "type": "IMAGE",
+     "link": 24
+    },
+    {
+     "localized_name": "upscale_method",
+     "name": "upscale_method",
+     "type": "COMBO",
+     "widget": {
+      "name": "upscale_method"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "scale_by",
+     "name": "scale_by",
+     "type": "FLOAT",
+     "widget": {
+      "name": "scale_by"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      25
+     ]
+    }
+   ],
+   "title": "Scale to 1.5x",
+   "properties": {
+    "Node name for S&R": "ImageScaleBy"
+   },
+   "widgets_values": [
+    "lanczos",
+    0.75
+   ],
+   "widgets_values_named": {
+    "upscale_method": "lanczos",
+    "scale_by": 0.75
+   }
+  },
+  {
+   "id": 13,
+   "type": "VAEEncode",
+   "pos": [
+    600,
+    780
+   ],
+   "size": [
+    140,
+    46
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "pixels",
+     "name": "pixels",
+     "type": "IMAGE",
+     "link": 25
+    },
+    {
+     "localized_name": "vae",
+     "name": "vae",
+     "type": "VAE",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "LATENT",
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      26
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEEncode"
+   }
+  },
+  {
+   "id": 14,
+   "type": "KSampler",
+   "pos": [
+    820,
+    780
+   ],
+   "size": [
+    210,
+    262
+   ],
+   "flags": {},
+   "order": 13,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "model",
+     "name": "model",
+     "type": "MODEL",
+     "link": 4
+    },
+    {
+     "localized_name": "positive",
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 15
+    },
+    {
+     "localized_name": "negative",
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 16
+    },
+    {
+     "localized_name": "latent_image",
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 26
+    },
+    {
+     "localized_name": "seed",
+     "name": "seed",
+     "type": "INT",
+     "widget": {
+      "name": "seed"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "steps",
+     "name": "steps",
+     "type": "INT",
+     "widget": {
+      "name": "steps"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "cfg",
+     "name": "cfg",
+     "type": "FLOAT",
+     "widget": {
+      "name": "cfg"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sampler_name",
+     "name": "sampler_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "sampler_name"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "scheduler",
+     "name": "scheduler",
+     "type": "COMBO",
+     "widget": {
+      "name": "scheduler"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "denoise",
+     "name": "denoise",
+     "type": "FLOAT",
+     "widget": {
+      "name": "denoise"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "LATENT",
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      27
+     ]
+    }
+   ],
+   "title": "Hires pass",
+   "properties": {
+    "Node name for S&R": "KSampler"
+   },
+   "widgets_values": [
+    4243,
+    "randomize",
+    20,
+    6,
+    "euler_ancestral",
+    "normal",
+    0.4
+   ],
+   "widgets_values_named": {
+    "seed": 4243,
+    "control_after_generate": "randomize",
+    "steps": 20,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 0.4
+   }
+  },
+  {
+   "id": 15,
+   "type": "VAEDecode",
+   "pos": [
+    1160,
+    780
+   ],
+   "size": [
+    140,
+    46
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "samples",
+     "name": "samples",
+     "type": "LATENT",
+     "link": 27
+    },
+    {
+     "localized_name": "vae",
+     "name": "vae",
+     "type": "VAE",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      28
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEDecode"
+   }
+  },
+  {
+   "id": 16,
+   "type": "UltralyticsDetectorProvider",
+   "pos": [
+    1360,
+    780
+   ],
+   "size": [
+    219.0767578125,
+    78
+   ],
+   "flags": {},
+   "order": 15,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "model_name",
+     "name": "model_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "model_name"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "BBOX_DETECTOR",
+     "name": "BBOX_DETECTOR",
+     "type": "BBOX_DETECTOR",
+     "links": [
+      29
+     ]
+    },
+    {
+     "localized_name": "SEGM_DETECTOR",
+     "name": "SEGM_DETECTOR",
+     "type": "SEGM_DETECTOR",
+     "links": null
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UltralyticsDetectorProvider",
+    "models": [
+     {
+      "name": "bbox/face_yolov8m.pt",
+      "url": "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt",
+      "directory": "ultralytics"
+     }
+    ]
+   },
+   "widgets_values": [
+    "bbox/face_yolov8m.pt"
+   ],
+   "widgets_values_named": {
+    "model_name": "bbox/face_yolov8m.pt"
+   }
+  },
+  {
+   "id": 17,
+   "type": "FaceDetailer",
+   "pos": [
+    1360,
+    900
+   ],
+   "size": [
+    301.4296875,
+    960
+   ],
+   "flags": {},
+   "order": 16,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "image",
+     "name": "image",
+     "type": "IMAGE",
+     "link": 28
+    },
+    {
+     "localized_name": "model",
+     "name": "model",
+     "type": "MODEL",
+     "link": 5
+    },
+    {
+     "localized_name": "clip",
+     "name": "clip",
+     "type": "CLIP",
+     "link": 8
+    },
+    {
+     "localized_name": "vae",
+     "name": "vae",
+     "type": "VAE",
+     "link": 12
+    },
+    {
+     "localized_name": "positive",
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 17
+    },
+    {
+     "localized_name": "negative",
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 18
+    },
+    {
+     "localized_name": "bbox_detector",
+     "name": "bbox_detector",
+     "type": "BBOX_DETECTOR",
+     "link": 29
+    },
+    {
+     "localized_name": "sam_model_opt",
+     "name": "sam_model_opt",
+     "shape": 7,
+     "type": "SAM_MODEL",
+     "link": null
+    },
+    {
+     "localized_name": "segm_detector_opt",
+     "name": "segm_detector_opt",
+     "shape": 7,
+     "type": "SEGM_DETECTOR",
+     "link": null
+    },
+    {
+     "localized_name": "detailer_hook",
+     "name": "detailer_hook",
+     "shape": 7,
+     "type": "DETAILER_HOOK",
+     "link": null
+    },
+    {
+     "localized_name": "scheduler_func_opt",
+     "name": "scheduler_func_opt",
+     "shape": 7,
+     "type": "SCHEDULER_FUNC",
+     "link": null
+    },
+    {
+     "localized_name": "guide_size",
+     "name": "guide_size",
+     "type": "FLOAT",
+     "widget": {
+      "name": "guide_size"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "guide_size_for",
+     "name": "guide_size_for",
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "guide_size_for"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "max_size",
+     "name": "max_size",
+     "type": "FLOAT",
+     "widget": {
+      "name": "max_size"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "seed",
+     "name": "seed",
+     "type": "INT",
+     "widget": {
+      "name": "seed"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "steps",
+     "name": "steps",
+     "type": "INT",
+     "widget": {
+      "name": "steps"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "cfg",
+     "name": "cfg",
+     "type": "FLOAT",
+     "widget": {
+      "name": "cfg"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sampler_name",
+     "name": "sampler_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "sampler_name"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "scheduler",
+     "name": "scheduler",
+     "type": "COMBO",
+     "widget": {
+      "name": "scheduler"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "denoise",
+     "name": "denoise",
+     "type": "FLOAT",
+     "widget": {
+      "name": "denoise"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "feather",
+     "name": "feather",
+     "type": "INT",
+     "widget": {
+      "name": "feather"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "noise_mask",
+     "name": "noise_mask",
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "noise_mask"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "force_inpaint",
+     "name": "force_inpaint",
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "force_inpaint"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "bbox_threshold",
+     "name": "bbox_threshold",
+     "type": "FLOAT",
+     "widget": {
+      "name": "bbox_threshold"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "bbox_dilation",
+     "name": "bbox_dilation",
+     "type": "INT",
+     "widget": {
+      "name": "bbox_dilation"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "bbox_crop_factor",
+     "name": "bbox_crop_factor",
+     "type": "FLOAT",
+     "widget": {
+      "name": "bbox_crop_factor"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_detection_hint",
+     "name": "sam_detection_hint",
+     "type": "COMBO",
+     "widget": {
+      "name": "sam_detection_hint"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_dilation",
+     "name": "sam_dilation",
+     "type": "INT",
+     "widget": {
+      "name": "sam_dilation"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_threshold",
+     "name": "sam_threshold",
+     "type": "FLOAT",
+     "widget": {
+      "name": "sam_threshold"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_bbox_expansion",
+     "name": "sam_bbox_expansion",
+     "type": "INT",
+     "widget": {
+      "name": "sam_bbox_expansion"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_mask_hint_threshold",
+     "name": "sam_mask_hint_threshold",
+     "type": "FLOAT",
+     "widget": {
+      "name": "sam_mask_hint_threshold"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "sam_mask_hint_use_negative",
+     "name": "sam_mask_hint_use_negative",
+     "type": "COMBO",
+     "widget": {
+      "name": "sam_mask_hint_use_negative"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "drop_size",
+     "name": "drop_size",
+     "type": "INT",
+     "widget": {
+      "name": "drop_size"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "wildcard",
+     "name": "wildcard",
+     "type": "STRING",
+     "widget": {
+      "name": "wildcard"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "cycle",
+     "name": "cycle",
+     "type": "INT",
+     "widget": {
+      "name": "cycle"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "inpaint_model",
+     "name": "inpaint_model",
+     "shape": 7,
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "inpaint_model"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "noise_mask_feather",
+     "name": "noise_mask_feather",
+     "shape": 7,
+     "type": "INT",
+     "widget": {
+      "name": "noise_mask_feather"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "tiled_encode",
+     "name": "tiled_encode",
+     "shape": 7,
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "tiled_encode"
+     },
+     "link": null
+    },
+    {
+     "localized_name": "tiled_decode",
+     "name": "tiled_decode",
+     "shape": 7,
+     "type": "BOOLEAN",
+     "widget": {
+      "name": "tiled_decode"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "image",
+     "name": "image",
+     "type": "IMAGE",
+     "links": [
+      30
+     ]
+    },
+    {
+     "localized_name": "cropped_refined",
+     "name": "cropped_refined",
+     "shape": 6,
+     "type": "IMAGE",
+     "links": null
+    },
+    {
+     "localized_name": "cropped_enhanced_alpha",
+     "name": "cropped_enhanced_alpha",
+     "shape": 6,
+     "type": "IMAGE",
+     "links": null
+    },
+    {
+     "localized_name": "mask",
+     "name": "mask",
+     "type": "MASK",
+     "links": null
+    },
+    {
+     "localized_name": "detailer_pipe",
+     "name": "detailer_pipe",
+     "type": "DETAILER_PIPE",
+     "links": null
+    },
+    {
+     "localized_name": "cnet_images",
+     "name": "cnet_images",
+     "shape": 6,
+     "type": "IMAGE",
+     "links": null
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "FaceDetailer"
+   },
+   "widgets_values": [
+    512,
+    true,
+    1024,
+    4244,
+    "randomize",
+    20,
+    6,
+    "euler_ancestral",
+    "normal",
+    0.4,
+    5,
+    true,
+    true,
+    0.5,
+    10,
+    3,
+    "center-1",
+    0,
+    0.93,
+    0,
+    0.7,
+    "False",
+    10,
+    "",
+    1,
+    false,
+    20,
+    false,
+    false
+   ],
+   "widgets_values_named": {
+    "guide_size": 512,
+    "guide_size_for": true,
+    "max_size": 1024,
+    "seed": 4244,
+    "control_after_generate": "randomize",
+    "steps": 20,
+    "cfg": 6,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "denoise": 0.4,
+    "feather": 5,
+    "noise_mask": true,
+    "force_inpaint": true,
+    "bbox_threshold": 0.5,
+    "bbox_dilation": 10,
+    "bbox_crop_factor": 3,
+    "sam_detection_hint": "center-1",
+    "sam_dilation": 0,
+    "sam_threshold": 0.93,
+    "sam_bbox_expansion": 0,
+    "sam_mask_hint_threshold": 0.7,
+    "sam_mask_hint_use_negative": "False",
+    "drop_size": 10,
+    "wildcard": "",
+    "cycle": 1,
+    "inpaint_model": false,
+    "noise_mask_feather": 20,
+    "tiled_encode": false,
+    "tiled_decode": false
+   }
+  },
+  {
+   "id": 18,
+   "type": "SaveImage",
+   "pos": [
+    1760,
+    780
+   ],
+   "size": [
+    420,
+    600
+   ],
+   "flags": {},
+   "order": 17,
+   "mode": 0,
+   "inputs": [
+    {
+     "localized_name": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "link": 30
+    },
+    {
+     "localized_name": "filename_prefix",
+     "name": "filename_prefix",
+     "type": "STRING",
+     "widget": {
+      "name": "filename_prefix"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "localized_name": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "links": null
+    }
+   ],
+   "properties": {},
+   "widgets_values": [
+    "illustrious/hentai"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "illustrious/hentai"
+   }
+  }
+ ],
+ "links": [
+  [
+   1,
+   2,
+   0,
+   3,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   2,
+   1,
+   3,
+   1,
+   "CLIP"
+  ],
+  [
+   3,
+   3,
+   0,
+   7,
+   0,
+   "MODEL"
+  ],
+  [
+   4,
+   3,
+   0,
+   14,
+   0,
+   "MODEL"
+  ],
+  [
+   5,
+   3,
+   0,
+   17,
+   1,
+   "MODEL"
+  ],
+  [
+   6,
+   3,
+   1,
+   4,
+   0,
+   "CLIP"
+  ],
+  [
+   7,
+   3,
+   1,
+   5,
+   0,
+   "CLIP"
+  ],
+  [
+   8,
+   3,
+   1,
+   17,
+   2,
+   "CLIP"
+  ],
+  [
+   9,
+   2,
+   2,
+   8,
+   1,
+   "VAE"
+  ],
+  [
+   10,
+   2,
+   2,
+   13,
+   1,
+   "VAE"
+  ],
+  [
+   11,
+   2,
+   2,
+   15,
+   1,
+   "VAE"
+  ],
+  [
+   12,
+   2,
+   2,
+   17,
+   3,
+   "VAE"
+  ],
+  [
+   13,
+   4,
+   0,
+   7,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   14,
+   5,
+   0,
+   7,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   15,
+   4,
+   0,
+   14,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   16,
+   5,
+   0,
+   14,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   17,
+   4,
+   0,
+   17,
+   4,
+   "CONDITIONING"
+  ],
+  [
+   18,
+   5,
+   0,
+   17,
+   5,
+   "CONDITIONING"
+  ],
+  [
+   19,
+   6,
+   0,
+   7,
+   3,
+   "LATENT"
+  ],
+  [
+   20,
+   7,
+   0,
+   8,
+   0,
+   "LATENT"
+  ],
+  [
+   21,
+   8,
+   0,
+   9,
+   0,
+   "IMAGE"
+  ],
+  [
+   22,
+   8,
+   0,
+   11,
+   1,
+   "IMAGE"
+  ],
+  [
+   23,
+   10,
+   0,
+   11,
+   0,
+   "UPSCALE_MODEL"
+  ],
+  [
+   24,
+   11,
+   0,
+   12,
+   0,
+   "IMAGE"
+  ],
+  [
+   25,
+   12,
+   0,
+   13,
+   0,
+   "IMAGE"
+  ],
+  [
+   26,
+   13,
+   0,
+   14,
+   3,
+   "LATENT"
+  ],
+  [
+   27,
+   14,
+   0,
+   15,
+   0,
+   "LATENT"
+  ],
+  [
+   28,
+   15,
+   0,
+   17,
+   0,
+   "IMAGE"
+  ],
+  [
+   29,
+   16,
+   0,
+   17,
+   6,
+   "BBOX_DETECTOR"
+  ],
+  [
+   30,
+   17,
+   0,
+   18,
+   0,
+   "IMAGE"
+  ]
+ ],
+ "groups": [
+  {
+   "id": 1,
+   "title": "1 · Model and LoRA",
+   "bounding": [
+    0,
+    -20,
+    360,
+    420
+   ],
+   "color": "#3f789e",
+   "flags": {}
+  },
+  {
+   "id": 2,
+   "title": "2 · Prompt",
+   "bounding": [
+    380,
+    -20,
+    480,
+    500
+   ],
+   "color": "#3f789e",
+   "flags": {}
+  },
+  {
+   "id": 3,
+   "title": "3 · Base image",
+   "bounding": [
+    860,
+    -20,
+    660,
+    720
+   ],
+   "color": "#3f789e",
+   "flags": {}
+  },
+  {
+   "id": 4,
+   "title": "4 · Hires fix (1.5x)",
+   "bounding": [
+    0,
+    710,
+    1340,
+    420
+   ],
+   "color": "#3f789e",
+   "flags": {}
+  },
+  {
+   "id": 5,
+   "title": "5 · Face detailer",
+   "bounding": [
+    1340,
+    710,
+    400,
+    760
+   ],
+   "color": "#3f789e",
+   "flags": {}
+  }
+ ],
+ "config": {},
+ "extra": {
+  "ds": {
+   "scale": 0.577301204819278,
+   "offset": [
+    919.060526549602,
+    615.6734520492697
+   ]
+  },
+  "comfortable": {
+   "starter": "illustrious-hentai",
+   "built": "by hand in ComfyUI 1.58.5"
+  }
+ },
+ "version": 0.4
+}

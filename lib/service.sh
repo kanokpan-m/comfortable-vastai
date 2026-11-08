@@ -8,9 +8,6 @@ chmod 755 "$COMFORTABLE_DIR/supervisor/comfortable.sh"
 mkdir -p /etc/supervisor/conf.d
 install -m 644 "$COMFORTABLE_DIR/supervisor/comfortable.conf" /etc/supervisor/conf.d/comfortable.conf
 
-# Remove files left by earlier single-file versions of this script.
-pkill -f '/usr/local/bin/comfy-xtra-supervisor.sh' >/dev/null 2>&1 || true
-rm -f /usr/local/bin/comfy-xtra-supervisor.sh /opt/supervisor-scripts/comfy-xtra.sh /opt/x-dashboard.py
 
 USE_SUPERVISOR=0
 if command -v supervisorctl >/dev/null 2>&1 && supervisorctl pid >/dev/null 2>&1; then

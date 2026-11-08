@@ -6,12 +6,11 @@
 # Template env:
 #   COMFORTABLE_REPO  GitHub repo to install from      (default kanokpan-m/comfortable-vastai)
 #   COMFORTABLE_REF   branch, tag or commit to install (default main)
-# The XTRA_REPO / XTRA_REF names from before the rename still work.
 set -eu
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
-COMFORTABLE_REPO="${COMFORTABLE_REPO:-${XTRA_REPO:-kanokpan-m/comfortable-vastai}}"
-COMFORTABLE_REF="${COMFORTABLE_REF:-${XTRA_REF:-main}}"
+COMFORTABLE_REPO="${COMFORTABLE_REPO:-kanokpan-m/comfortable-vastai}"
+COMFORTABLE_REF="${COMFORTABLE_REF:-main}"
 COMFORTABLE_DIR=/opt/comfortable
 export COMFORTABLE_REPO COMFORTABLE_REF
 

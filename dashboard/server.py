@@ -2,17 +2,20 @@
 import asyncio
 import logging
 import os
+import re
 import socket
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from aiohttp import web  # noqa: E402
 
-from comfortable import __version__, api, api_more, autostop, backup, config, fixer, health, library, models, notify, store, system  # noqa: E402
+from comfortable import (__version__, api, api_catalog, api_create, api_more, autostop, backup, catalog, config, fixer, health,  # noqa: E402
+                         library, manager, models, notify, store, system)
 from comfortable.downloads import DownloadManager  # noqa: E402
 from comfortable.events import bus  # noqa: E402
-from comfortable.util import human_size, log  # noqa: E402
+from comfortable.util import human_size, log, now  # noqa: E402
 
 
 def auto_install(app):
@@ -27,7 +30,8 @@ def auto_install(app):
     for item in st.all("library"):
         if not (item.get("auto_install") or bundle_ids & set(item.get("bundle_ids") or [])):
             continue
-        if item.get("category") in idx.get((item.get("filename") or "").lower(), []):
+        where = idx.get(os.path.basename(item.get("filename") or "").lower(), [])
+        if any(config.same_folder(item.get("category"), c) for c in where):
             continue
         try:
             app["downloads"].add(api._download_spec(item), auto=True)
@@ -36,6 +40,67 @@ def auto_install(app):
             log.warning("Auto-install of %s skipped: %s", item.get("name"), exc)
     if queued:
         log.info("Auto-install queued %d model(s)", queued)
+
+
+def boot_install(app):
+    """COMFORTABLE_INSTALL=<catalog pack / starter workflow ids> (`comfortable rent --install`):
+    queue their files right away; node packs and the starters' ComfyUI copies follow once ComfyUI
+    answers (boot_finish). Progress: GET /api/catalog/progress -> boot."""
+    ids = [i for i in re.split(r"[,\s]+", config.env("INSTALL", "")) if i]
+    if not ids:
+        return
+    try:
+        packs, workflows = catalog.boot_install(app["store"], app["downloads"], ids)
+    except Exception as exc:
+        log.warning("COMFORTABLE_INSTALL failed: %s", exc)
+        catalog.boot_state.update(step="failed", errors=[{"error": str(exc)}])
+        return
+    if packs or workflows:
+        app["bg"].append(asyncio.create_task(boot_finish(app, packs, workflows)))
+
+
+async def boot_finish(app, packs, workflows, wait=900):
+    """Install the node packs, restart ComfyUI if it's idle, save the starters into ComfyUI."""
+    state, st = catalog.boot_state, app["store"]
+    deadline = time.time() + wait
+    while not await asyncio.to_thread(manager.flavor, True):
+        if time.time() > deadline:
+            state["errors"].append({"error": "ComfyUI-Manager never answered: node packs were not installed"})
+            state.update(step="done", finished_at=now())
+            return
+        await asyncio.sleep(10)
+    cat = catalog.current(st)
+    order, wfs = catalog.resolve(cat, packs, workflows)
+    state["step"] = "node packs"
+    results = await asyncio.to_thread(catalog.install_nodes, cat, catalog.node_ids(cat, order, wfs))
+    state["node_packs"] = results
+    if "queued" in results.values():
+        end = time.time() + 900
+        while time.time() < end and catalog.manager_busy(await asyncio.to_thread(manager.queue_status)):
+            await asyncio.sleep(5)
+    if any(v in ("queued", "installed") for v in results.values()):
+        comfy = system._comfy_state
+        if comfy.get("running") or comfy.get("queue_remaining"):
+            state["restart_needed"] = True  # someone is already using ComfyUI: don't pull it away
+        else:
+            state["step"] = "restarting ComfyUI"
+            try:
+                await system.restart_comfy()
+            except Exception as exc:
+                state["restart_needed"] = True
+                state["errors"].append({"error": f"restart ComfyUI to load the new node packs ({exc})"})
+            end = time.time() + 300
+            while time.time() < end and not await asyncio.to_thread(manager.flavor, True):
+                await asyncio.sleep(5)
+    if workflows:
+        state["step"] = "saving starters"
+        for wid in workflows:
+            try:
+                state["saved"].append({"id": wid, **await asyncio.to_thread(catalog.save_to_comfy, st, wid, False)})
+            except Exception as exc:
+                state["errors"].append({"workflow": wid, "error": f"not saved into ComfyUI: {exc}"})
+    state.update(step="done", finished_at=now())
+    log.info("COMFORTABLE_INSTALL done: node packs %s, starters saved %s", results or "none", [s["id"] for s in state["saved"]])
 
 
 async def boot_tasks(app):
@@ -85,6 +150,7 @@ async def on_startup(app):
     app["bg"] = [asyncio.create_task(system.monitor_loop()), asyncio.create_task(system.comfy_ws_loop()),
                  asyncio.create_task(autostop.loop(app["store"], app["downloads"])), asyncio.create_task(boot_tasks(app))]
     auto_install(app)
+    boot_install(app)
     st = app["store"]
     disk = (await system.snapshot())["disk"]
     await notify.discord(st.setting("discord_webhook"), "🚀 Comfortable online",
@@ -116,6 +182,8 @@ def make_app():
     app["store"] = store.init()
     app["downloads"] = DownloadManager(app["store"])
     app.add_routes(api_more.routes)
+    app.add_routes(api_catalog.routes)
+    app.add_routes(api_create.routes)
     app.add_routes(api.routes)  # last: its catch-all serves the web UI
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)

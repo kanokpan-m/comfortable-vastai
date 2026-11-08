@@ -9,15 +9,9 @@ export HF_XET_HIGH_PERFORMANCE=1
 LOG_FILE="/var/log/provisioning_comfortable.log"
 DASH_LOG="/var/log/comfortable.log"
 ENV_FILE="/workspace/.comfortable.env"
-# Where this copy is installed (/opt/comfortable; /opt/comfy-xtra on instances set up before the rename).
+# Where this copy is installed (/opt/comfortable).
 COMFORTABLE_DIR="${COMFORTABLE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
-# Templates made before the rename set XTRA_<name>; COMFORTABLE_<name> wins when both are set.
-for _name in REPO REF BUNDLES MODEL_VOLUME COMFY_EXTENSION HF_AUTHORS TUNE ATTENTION; do
-  _old="XTRA_${_name}" _new="COMFORTABLE_${_name}"
-  if [[ -z "${!_new:-}" && -n "${!_old:-}" ]]; then export "${_new}=${!_old}"; fi
-done
-unset _name _old _new
 COMFY_BASE=/workspace/ComfyUI/models
 DASH_PORT=17890
 

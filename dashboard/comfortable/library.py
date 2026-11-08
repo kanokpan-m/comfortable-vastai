@@ -1,4 +1,5 @@
 """Library maintenance: metadata refresh, dead-link detection, bundle planning."""
+import os
 import shutil
 import time
 
@@ -41,6 +42,10 @@ def refresh(store, ids=None, only_stale=False):
                 item[key] = cand[key]
         if cand.get("preview"):
             item["preview_mature"] = bool(cand.get("preview_mature"))
+        if cand.get("model_type"):
+            item["type"] = cand["model_type"]
+        if cand.get("source") == "civitai":
+            item["nsfw"] = bool(cand.get("nsfw"))
         if not item.get("filename"):
             item["filename"] = cand.get("filename")
         item.pop("source_missing", None)
@@ -56,11 +61,18 @@ def bundle_items(store, bundle_id):
     return [i for i in store.all("library") if bundle_id in (i.get("bundle_ids") or [])]
 
 
+def is_installed(item, idx=None):
+    """Whether a library item's file is on disk in its folder (unet/ counts as diffusion_models/)."""
+    idx = models.index() if idx is None else idx
+    where = idx.get(os.path.basename(item.get("filename") or "").lower(), [])
+    return any(config.same_folder(item.get("category"), c) for c in where)
+
+
 def bundle_plan(store, bundle_id):
     """What installing a bundle would download, and whether it fits on disk."""
     idx = models.index()
     items = bundle_items(store, bundle_id)
-    missing = [i for i in items if i.get("category") not in idx.get((i.get("filename") or "").lower(), [])]
+    missing = [i for i in items if not is_installed(i, idx)]
     need = sum(int(i.get("size") or 0) for i in missing)
     free = shutil.disk_usage(config.MODELS_DIR if config.MODELS_DIR.exists() else config.WORKSPACE).free
     return {"items": len(items), "installed": len(items) - len(missing), "missing": len(missing),

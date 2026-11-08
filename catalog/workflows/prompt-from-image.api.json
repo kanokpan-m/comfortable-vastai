@@ -1,0 +1,75 @@
+{
+ "workflow": "prompt-from-image",
+ "graph_sha256": "b86794615c7ae46bea742ccd4c0f3b6cef26becfe8a0a31a085cad7acc1f2b90",
+ "frontend": "1.58.5",
+ "prompt": {
+  "5": {
+   "inputs": {
+    "clip_name": "qwen3vl_4b_fp8_scaled.safetensors",
+    "type": "ideogram4",
+    "device": "default"
+   },
+   "class_type": "CLIPLoader",
+   "_meta": {
+    "title": "Load CLIP",
+    "cnr_id": "comfy-core",
+    "ver": "0.25.0"
+   }
+  },
+  "7": {
+   "inputs": {
+    "source": [
+     "10",
+     0
+    ]
+   },
+   "class_type": "PreviewAny",
+   "_meta": {
+    "title": "Preview as Text",
+    "cnr_id": "comfy-core",
+    "ver": "0.25.0"
+   }
+  },
+  "8": {
+   "inputs": {
+    "image": "example.png"
+   },
+   "class_type": "LoadImage",
+   "_meta": {
+    "title": "Load Image",
+    "cnr_id": "comfy-core",
+    "ver": "0.25.0"
+   }
+  },
+  "10": {
+   "inputs": {
+    "prompt": "Describe this image as one detailed paragraph that works as a prompt for an image or video model: the subject and their appearance, clothing, pose and expression, the setting, lighting, camera angle and lens, and the art or photo style. No lists, no preamble.",
+    "max_length": 512,
+    "sampling_mode": "on",
+    "sampling_mode.temperature": 0.7,
+    "sampling_mode.top_k": 64,
+    "sampling_mode.top_p": 0.95,
+    "sampling_mode.min_p": 0.05,
+    "sampling_mode.repetition_penalty": 1.05,
+    "sampling_mode.presence_penalty": 0,
+    "sampling_mode.seed": 0,
+    "thinking": false,
+    "use_default_template": true,
+    "mtp": "auto",
+    "clip": [
+     "5",
+     0
+    ],
+    "images.image1": [
+     "8",
+     0
+    ]
+   },
+   "class_type": "TextGenerateV2",
+   "_meta": {
+    "title": "Generate Text"
+   }
+  }
+ },
+ "controls": []
+}

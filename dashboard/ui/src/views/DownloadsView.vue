@@ -40,7 +40,7 @@ const clear = () => app.run(() => api.post('downloads/clear'))
     <Empty v-if="!app.downloadList.length" :icon="Download" title="No downloads yet" text="Downloads from your library, Discover and workflows show up here with live progress." />
     <ul class="space-y-2">
       <li v-for="t in app.downloadList" :key="t.id" class="flex gap-3 rounded-xl border border-subtle bg-panel p-3">
-        <ModelThumb :src="t.preview" :mature="t.preview_mature" :category="t.category" class="size-14 shrink-0 rounded-lg" />
+        <ModelThumb :src="t.preview" :mature="t.preview_mature" :category="t.category" :item="t" :alt="t.name" play="never" :width="160" small class="size-14 shrink-0 rounded-lg" />
         <div class="min-w-0 flex-1">
           <div class="flex items-start gap-2">
             <div class="min-w-0 flex-1">

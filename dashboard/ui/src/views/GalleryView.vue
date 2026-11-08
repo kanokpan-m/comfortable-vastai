@@ -11,6 +11,7 @@ import Picker from '../components/ui/Picker.vue'
 import Empty from '../components/ui/Empty.vue'
 import Lightbox from '../components/Lightbox.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import MediaPoster from '../components/MediaPoster.vue'
 
 const PAGE = 60
 const app = useApp()
@@ -45,6 +46,9 @@ watch(() => app.galleryTick, (n) => { if (n && !selecting.value && viewer.value 
 
 const folderOptions = computed(() => [{ value: '', label: 'All folders' }, ...folders.value.map((f) => ({ value: f, label: f }))])
 const thumb = (it) => api.url('gallery/thumb', { path: it.path })
+// A thumbnail that can't be made (unreadable or half-written file) shows a poster with its name.
+const noThumb = ref(new Set())
+const thumbFailed = (it) => { noThumb.value = new Set([...noThumb.value, it.path]) }
 function toggle(it) {
   const s = new Set(selected.value)
   s.has(it.path) ? s.delete(it.path) : s.add(it.path)
@@ -109,7 +113,8 @@ function onDeleted(path) {
       <li v-for="(it, i) in items" :key="it.path" class="group relative">
         <button class="block aspect-square w-full overflow-hidden rounded-lg bg-card ring-offset-2 ring-offset-[var(--canvas)]"
                 :class="selected.has(it.path) && 'ring-2 ring-primary'" :aria-label="`${selecting ? 'Select' : 'Open'} ${it.name}`" @click="open(i, it)">
-          <img v-if="it.kind !== 'audio'" :src="thumb(it)" :alt="it.name" loading="lazy" decoding="async" class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+          <img v-if="it.kind !== 'audio' && !noThumb.has(it.path)" :src="thumb(it)" :alt="it.name" loading="lazy" decoding="async" class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" @error="thumbFailed(it)" />
+          <span v-else-if="it.kind !== 'audio'" class="relative block size-full"><MediaPoster :seed="it.path" :icon="it.kind === 'video' ? Film : Images" :label="it.name" /></span>
           <span v-else class="flex size-full items-center justify-center text-xs text-fg2">{{ it.name }}</span>
           <PlayCircle v-if="it.kind === 'video'" class="absolute left-2 top-2 size-5 text-white drop-shadow" />
         </button>

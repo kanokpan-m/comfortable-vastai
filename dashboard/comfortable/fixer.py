@@ -24,7 +24,7 @@ import urllib.parse
 
 import requests
 
-from . import config, models, sources, workflows
+from . import config, manager, models, sources, workflows
 from .util import log
 
 HF_AUTHORS = [a.strip() for a in config.env("HF_AUTHORS", "Comfy-Org,Kijai,city96,QuantStack,lllyasviel").split(",") if a.strip()]
@@ -59,15 +59,22 @@ def _comfy(path, timeout=20):
 
 
 # ---- sources of model files ----------------------------------------------------------------
+MANAGER_MODEL_LIST = "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/main/model-list.json"
+
+
 def manager_models():
-    """{basename_lower: [entries]} from ComfyUI-Manager's model list (empty if Manager isn't there).
+    """{basename_lower: [entries]} from ComfyUI-Manager's model list (the running Manager's copy, else
+    the published one: the Manager built into ComfyUI has no model-list endpoint).
     A list, because names repeat: 20 different models are called diffusion_pytorch_model.safetensors."""
     def load():
         try:
             data = _comfy("/externalmodel/getlist?mode=cache")
-        except Exception as exc:
-            log.info("ComfyUI-Manager model list unavailable: %s", exc)
-            return {}
+        except Exception:
+            try:
+                data = sources._get_json(MANAGER_MODEL_LIST)
+            except Exception as exc:
+                log.info("ComfyUI-Manager model list unavailable: %s", exc)
+                return {}
         out = {}
         for m in data.get("models", []):
             fn = (m.get("filename") or "").strip()
@@ -555,35 +562,28 @@ def installed_node_types():
 
 
 def manager_packs():
-    def load():
-        data = _comfy("/customnode/getlist?mode=cache&skip_update=true", timeout=60)
-        return data.get("node_packs") or data
-    return _cached("manager_packs", 1800, load)
+    """Every node pack ComfyUI-Manager knows (legacy Manager or the one built into ComfyUI)."""
+    return manager.packs()
 
 
 def manager_mappings():
-    def load():
-        data = _comfy("/customnode/getmappings?mode=cache", timeout=60)
-        index, patterns = {}, []
-        for key, (types, meta) in data.items():
-            for t in types:
-                index.setdefault(t, []).append(key)
-            if meta.get("nodename_pattern"):
-                patterns.append((meta["nodename_pattern"], key))
-        return index, patterns
-    return _cached("manager_mappings", 1800, load)
+    return manager.mappings()
 
 
 def _pack_info(key, packs):
-    """Manager list entry for a pack key (list key, CNR id or git URL). `key` in the result is the
+    """Manager list entry for a pack key (list key, registry id or git URL). `key` in the result is the
     list key, which install_packs takes; `id` stays the Manager's own id for its install API."""
     if key in packs:
         return {**packs[key], "id": packs[key].get("id") or key, "key": key}
-    norm = key.rstrip("/").removesuffix(".git").lower()
+    norm = manager.norm_repo(key)
     for pid, p in packs.items():
-        repo = (p.get("repository") or (p.get("files") or [""])[0] or "").rstrip("/").removesuffix(".git").lower()
-        if (repo and repo == norm) or p.get("id") == key:
+        repo = manager.norm_repo(p.get("repository") or (p.get("files") or [""])[0])
+        if (repo and repo == norm) or p.get("id") == key or p.get("cnr") == key:
             return {**p, "id": p.get("id") or pid, "key": pid}
+    if key and not key.startswith("http"):
+        reg = manager.registry_pack(key)  # registered, but not in the Manager's list yet
+        if reg:
+            return {**reg, "key": key, "cnr": key, "state": "installed" if manager.is_installed(key, reg.get("repository")) else "not-installed"}
     return None
 
 
@@ -673,42 +673,13 @@ def _pack_summary(p):
 
 def install_packs(pack_ids):
     """Queue node packs in ComfyUI-Manager and start the queue. Returns per-pack results."""
-    packs = manager_packs()
-    results = {}
-    for pid in dict.fromkeys(pack_ids):
-        p = _pack_info(pid, packs)
-        if not p and re.match(r"https://github\.com/[\w.\-]+/[\w.\-]+$", pid):
-            # Not in Manager's registry: Manager installs it from the git URL only if allowed in its config.
-            r = requests.post(config.COMFY_URL + "/customnode/install/git_url", json={"url": pid}, timeout=600)
-            if r.ok:
-                results[pid] = "installed"
-            elif r.status_code == 403:
-                results[pid] = ("ComfyUI-Manager only installs packs that aren't in its registry when allow_git_url_install = True "
-                                "is set in ComfyUI/user/__manager/config.ini; set it and restart ComfyUI, or install the pack by hand")
-            else:
-                results[pid] = f"install failed ({r.status_code}): {r.text[:160]}"
-            continue
-        if not p:
-            results[pid] = "not found in ComfyUI-Manager's list"
-            continue
-        if p.get("state") in ("enabled", "installed"):
-            results[pid] = "already installed"
-            continue
-        body = {**{k: v for k, v in p.items() if k != "key"}, "selected_version": "latest" if p.get("version", "unknown") != "unknown" else "unknown",
-                "ui_id": pid, "channel": "default", "mode": "cache", "skip_post_install": False}
-        r = requests.post(config.COMFY_URL + "/manager/queue/install", json=body, timeout=30)
-        results[pid] = "queued" if r.ok else f"refused ({r.status_code}): {r.text[:160]}"
-    if any(v == "queued" for v in results.values()):
-        requests.post(config.COMFY_URL + "/manager/queue/start", timeout=30)
-    _cache.pop("manager_packs", None)
+    results = manager.install(pack_ids)
+    _cache.pop("object_info", None)
     return results
 
 
 def manager_queue_status():
-    try:
-        return _comfy("/manager/queue/status", timeout=10)
-    except Exception as exc:
-        return {"error": str(exc)}
+    return manager.queue_status()
 
 
 # ---- the plan ----------------------------------------------------------------------------------

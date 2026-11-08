@@ -1,0 +1,1 @@
+import{b as e}from"./Teleport-C0JDZRNP.js";import{ir as t,nt as n}from"./format-CpM1mVXH.js";function r(){let r=t();return{primitiveElement:r,currentElement:n(()=>[`#text`,`#comment`].includes(r.value?.$el.nodeName)?r.value?.$el.nextElementSibling:e(r))}}export{r as t};
